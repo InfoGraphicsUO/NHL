@@ -7,6 +7,7 @@ function mapInits() {
         zoom: 4.2 
     });
 
+    addMapLayers(map)
     addTimeSlider()
 }
 
@@ -50,6 +51,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function addMapLayers() {
+function addMapLayers(map) {
+    map.on('load', () => {
+        map.addSource('landmark-point-data', {
+            type: 'geojson',
+            data: '/data/NHL IGL Database - NHLDB.geojson' 
+        });
+
+        map.addLayer({
+            id: 'landmarks',
+            type: 'circle', 
+            source: 'landmark-point-data',
+            paint: {
+                'circle-color': 'DarkGoldenRod',
+                'circle-radius': 4,
+                'circle-stroke-width': 1,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+    
+    });
 
 }
