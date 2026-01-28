@@ -55,6 +55,7 @@ function addMapLayers(map) {
     map.on('load', () => {
         map.addSource('landmark-point-data', {
             type: 'geojson',
+            generateId: true,   // required for feature-state-based interactions
             data: '/data/NHL IGL Database - NHLDB.geojson' 
         });
 
@@ -64,12 +65,47 @@ function addMapLayers(map) {
             source: 'landmark-point-data',
             paint: {
                 'circle-color': 'DarkGoldenRod',
-                'circle-radius': 4,
+                'circle-radius': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    5, 4,   // >= Zoom 5, 1px radius
+                    10, 7   // >= Zoom 10, 5px radius
+                ],
                 'circle-stroke-width': 1,
                 'circle-stroke-color': '#ffffff'
             }
         });
     
+    });
+
+    const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+    });
+
+    map.addInteraction('places-mouseenter-interaction', {
+        type: 'mouseenter',
+        target: { layerId: 'landmarks' },
+        handler: (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+
+            // coordinates from the point
+            const coordinates = e.feature.geometry.coordinates.slice();
+            const name = e.feature.properties.Historic_Name;
+
+            // Populate the popup with location, content, and add to map
+            popup.setLngLat(coordinates).setHTML(name).addTo(map);
+        }
+    });
+
+    map.addInteraction('places-mouseleave-interaction', {
+        type: 'mouseleave',
+        target: { layerId: 'landmarks' },
+        handler: () => {
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+        }
     });
 
 }
