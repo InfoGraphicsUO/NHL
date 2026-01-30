@@ -3,53 +3,26 @@ function mapInits() {
     const map = new mapboxgl.Map({
         style: 'mapbox://styles/mapbox/streets-v11',
         container: 'map',
-        center: [-95, 39], 
-        zoom: 4.2 
+        center: [-132.09808, 41.09622], 
+        zoom: 2.5
     });
 
+    // global map instance
+    window._nhlMapInstance = map;
     addMapLayers(map)
-    addTimeSlider()
-}
 
-function addTimeSlider() {
-    // Time slider setup
-    const yearSlider = document.getElementById('year-slider');
-    const yearValue = document.getElementById('year-value');
-    if (yearSlider && yearValue) {
-        yearValue.textContent = yearSlider.value;
-        yearSlider.addEventListener('input', function() {
-            yearValue.textContent = this.value;
-            // TODO: Filter map markers by Form Year here
-        });
+    // zoom/center logging
+    function logMapState() {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        console.log(`Map zoom: ${zoom.toFixed(2)}, center: [${center.lng.toFixed(5)}, ${center.lat.toFixed(5)}]`);
     }
+    map.on('moveend', logMapState);
+    map.on('zoomend', logMapState);
+    map.on('dragend', logMapState);
 }
 
-// Get selected forms of white supremacy
-function getSelectedSupremacyForms() {
-    return Array.from(document.querySelectorAll('.supremacy-filter:checked')).map(cb => cb.value);
-}
 
-// Listen for changes to supremacy filters
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.supremacy-filter').forEach(cb => {
-        cb.addEventListener('change', function() {
-            // TODO: Filter map markers by selected forms of white supremacy
-        });
-    });
-});
-// Get selected representation modes
-function getSelectedModes() {
-    return Array.from(document.querySelectorAll('.mode-filter:checked')).map(cb => cb.value);
-}
-
-// Listen for changes to mode filters
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.mode-filter').forEach(cb => {
-        cb.addEventListener('change', function() {
-            // TODO: Filter map markers by selected modes
-        });
-    });
-});
 
 function addMapLayers(map) {
     map.on('load', () => {
@@ -92,10 +65,14 @@ function addMapLayers(map) {
 
             // coordinates from the point
             const coordinates = e.feature.geometry.coordinates.slice();
-            const name = e.feature.properties.Historic_Name;
+            const props = e.feature.properties;
+            const name = props.Historic_Name;
+            const formYear = props["Form Year"] || 'Unknown';
 
-            // Populate the popup with location, content, and add to map
-            popup.setLngLat(coordinates).setHTML(name).addTo(map);
+            // popup html
+            const html = `<div style="min-width:180px"><strong>${name}</strong><br><span>Form year: ${formYear}</span></div>`;
+            // Populate the popup 
+            popup.setLngLat(coordinates).setHTML(html).addTo(map);
         }
     });
 

@@ -11,14 +11,11 @@
         <script src="js/ui.js"></script>
         <script src="js/map.js"></script>
 
-        <style>
-            body { margin: 0; padding: 0; }
-            #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        </style>
+        <link rel="stylesheet" href="css/main.css">
     </head>
     <body>
-    <!-- Toggle Filters for Forms of White Supremacy -->
-    <div id="supremacy-filters" style="position:absolute;top:170px;left:20px;background:white;padding:10px 20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;">
+    <!-- Combined Filters for Forms of White Supremacy and Modes of Representation -->
+    <div id="combined-filters" style="position:absolute;top:20px;left:20px;background:white;padding:16px 24px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;min-width:260px;">
         <strong>Forms of White Supremacy:</strong><br>
         <label><input type="checkbox" class="supremacy-filter" value="Colonization" checked> Colonization</label><br>
         <label><input type="checkbox" class="supremacy-filter" value="Nation_Building" checked> Nation Building</label><br>
@@ -26,9 +23,7 @@
         <label><input type="checkbox" class="supremacy-filter" value="Slavery" checked> Slavery</label><br>
         <label><input type="checkbox" class="supremacy-filter" value="State_Formation" checked> State Formation</label><br>
         <label><input type="checkbox" class="supremacy-filter" value="Racial_Capitalism" checked> Racial Capitalism</label>
-    </div>
-    <!-- Toggle Filters for Modes of Representation -->
-    <div id="mode-filters" style="position:absolute;top:20px;left:20px;background:white;padding:10px 20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;">
+        <hr>
         <strong>Modes of Representation:</strong><br>
         <label><input type="checkbox" class="mode-filter" value="Acknowledged" checked> Acknowledged</label><br>
         <label><input type="checkbox" class="mode-filter" value="Multiculturalism" checked> Multiculturalism</label><br>
@@ -41,7 +36,7 @@
     <!-- Time Slider for Form Year -->
     <div id="slider-container" style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);background:white;padding:10px 20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;">
         <label for="year-slider">Form Year: <span id="year-value"></span></label>
-        <input type="range" id="year-slider" min="1800" max="2025" value="1970" step="1" style="width:300px;">
+        <input type="range" id="year-slider" min="1950" max="2026" value="2026" step="1" style="width:300px;">
     </div>
 
     </body>
