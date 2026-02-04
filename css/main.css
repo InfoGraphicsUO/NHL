@@ -34,7 +34,7 @@ label.mode-label:hover {
 }
 
 #year-slider {
-    width: 100%;
+    width: 300px;
     margin: 0.5em 0;
     accent-color: #b8860b;
     align-items: center;
@@ -52,19 +52,77 @@ body {
     position: absolute; top: 0; bottom: 0; width: 100%; 
 }
 
-#combined-filters {
+#sidebar-container {
     position: absolute;
-    top: 2rem;
-    left: 2rem;
+    top: 20px;
+    left: 20px;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: calc(100% - 100px);
+    pointer-events: none;
+    z-index: 10;
+}
+
+#filter-panel {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
     background: white;
     padding: 16px 24px;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    z-index: 10;
-    min-width: 260px;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
 }
 
-#slider-container {
+#side-panel {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    background: white;
+    padding: 16px 24px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 5px;
+}
+
+.side-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 10px;
+}
+
+#filter-toggle, #sp-close {
+    cursor: pointer;
+    font-size: 1.2em;
+}
+
+#sp-close {
+    line-height: 1;
+}
+
+#sp-title {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+#slider-panel {
     position: absolute;
     bottom: 30px;
     left: 50%;

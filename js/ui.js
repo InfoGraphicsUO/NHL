@@ -114,4 +114,36 @@ function setupUI() {
             }
         });
     }
+
+    //sidebar and filter toggle
+    const filterToggle = document.getElementById('filter-toggle');
+    const filterContent = document.getElementById('filter-content');
+    const sidePanel = document.getElementById('side-panel');
+    const spTitle = document.getElementById('sp-title');
+    const spClose = document.getElementById('sp-close');
+
+    if (filterToggle && filterContent) {
+        filterToggle.addEventListener('click', function() {
+            const isHidden = filterContent.style.display === 'none';
+            filterContent.style.display = isHidden ? 'block' : 'none';
+            filterToggle.innerHTML = isHidden ? '&#9650;' : '&#9660;';
+        });
+    }
+
+    if (spClose && sidePanel) {
+        spClose.addEventListener('click', () => { sidePanel.style.display = 'none'; });
+    }
+
+    map.on('click', 'landmarks', (e) => {
+        const props = e.features[0].properties;
+        const coordinates = e.features[0].geometry.coordinates.slice();
+
+        map.flyTo({
+            center: coordinates,
+            zoom: 13
+        });
+
+        if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
+        if (sidePanel) sidePanel.style.display = 'flex';
+    });
 }

@@ -15,28 +15,44 @@
     </head>
     <body>
     <!-- Combined Filters for Forms of White Supremacy and Modes of Representation -->
-    <div id="combined-filters" style="position:absolute;top:20px;left:20px;background:white;padding:16px 24px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;min-width:260px;">
-        <strong>Forms of White Supremacy</strong><br>
-        <label><input type="checkbox" class="supremacy-filter" value="Colonization" checked> Colonization</label><br>
-        <label><input type="checkbox" class="supremacy-filter" value="Nation_Building" checked> Nation Building</label><br>
-        <label><input type="checkbox" class="supremacy-filter" value="Settler_Colonization" checked> Settler Colonization</label><br>
-        <label><input type="checkbox" class="supremacy-filter" value="Slavery" checked> Slavery</label><br>
-        <label><input type="checkbox" class="supremacy-filter" value="State_Formation" checked> State Formation</label><br>
-        <label><input type="checkbox" class="supremacy-filter" value="Racial_Capitalism" checked> Racial Capitalism</label>
-        <hr>
-        <strong>Modes of Representation</strong><br>
-        <label><input type="checkbox" class="mode-filter" value="Acknowledged" checked> Acknowledged</label><br>
-        <label><input type="checkbox" class="mode-filter" value="Multiculturalism" checked> Multiculturalism</label><br>
-        <label><input type="checkbox" class="mode-filter" value="Erasure" checked> Erasure</label><br>
-        <label><input type="checkbox" class="mode-filter" value="Valorization" checked> Valorization</label>
+    <div id="sidebar-container">
+        <div id="filter-panel">
+            <div class="filter-header">
+                <span id="filter-toggle">&#9650;</span>
+            </div>
+            <div id="filter-content">
+                <strong>Forms of White Supremacy</strong><br>
+                <label><input type="checkbox" class="supremacy-filter" value="Colonization" checked> Colonization</label><br>
+                <label><input type="checkbox" class="supremacy-filter" value="Nation_Building" checked> Nation Building</label><br>
+                <label><input type="checkbox" class="supremacy-filter" value="Settler_Colonization" checked> Settler Colonization</label><br>
+                <label><input type="checkbox" class="supremacy-filter" value="Slavery" checked> Slavery</label><br>
+                <label><input type="checkbox" class="supremacy-filter" value="State_Formation" checked> State Formation</label><br>
+                <label><input type="checkbox" class="supremacy-filter" value="Racial_Capitalism" checked> Racial Capitalism</label>
+                <hr>
+                <strong>Modes of Representation</strong><br>
+                <label><input type="checkbox" class="mode-filter" value="Acknowledged" checked> Acknowledged</label><br>
+                <label><input type="checkbox" class="mode-filter" value="Multiculturalism" checked> Multiculturalism</label><br>
+                <label><input type="checkbox" class="mode-filter" value="Erasure" checked> Erasure</label><br>
+                <label><input type="checkbox" class="mode-filter" value="Valorization" checked> Valorization</label>
+            </div>
+        </div>
+
+        <!-- Side Panel Template -->
+        <div id="side-panel">
+            <div class="side-panel-header">
+                <h3 id="sp-title"></h3>
+                <span id="sp-close">&#10005;</span>
+            </div>
+            <div id="sp-desc">Site description</div>
+        </div>
     </div>
     
     <div id="map"></div>
 
     <!-- Time Slider for Form Year -->
-    <div id="slider-container" style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);background:white;padding:10px 20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;">
+    <div id="slider-panel">
         <label for="year-slider">Form Year: <span id="year-value"></span></label>
-        <input type="range" id="year-slider" min="1950" max="2026" value="2026" step="1" style="width:300px;">
+        <input type="range" id="year-slider" min="1950" max="2026" value="2026" step="1">
     </div>
 
     </body>
