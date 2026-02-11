@@ -53,17 +53,27 @@ function setupUI() {
         const year = parseInt(document.getElementById('year-slider').value);
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
-        const filtered = {
-            ...originalData,
-            features: originalData.features.filter(f => {
-                const formYear = parseInt(f.properties["Form Year"]);
-                // at least one checked supremacy and one checked mode must match
-                let supremacyMatch = supremacy.length === 0 ? true : supremacy.some(s => f.properties[s] === "1");
-                let modeMatch = modes.length === 0 ? true : modes.some(m => f.properties[m] === "1");
-                return (!isNaN(formYear) && formYear <= year) && supremacyMatch && modeMatch;
-            })
-        };
-        src.setData(filtered);
+            let filterExpr = ["all"];
+            filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
+            // year filter
+            filterExpr.push(["<=", ["to-number", ["get", "Form Year"]], year]);
+            // supremacy filter
+            if (supremacy.length > 0) {
+                let supremacyExpr = ["any"];
+                supremacy.forEach(s => {
+                    supremacyExpr.push(["==", ["get", s], "1"]);
+                });
+                filterExpr.push(supremacyExpr);
+            }
+            // modes filter
+            if (modes.length > 0) {
+                let modesExpr = ["any"];
+                modes.forEach(m => {
+                    modesExpr.push(["==", ["get", m], "1"]);
+                });
+                filterExpr.push(modesExpr);
+            }
+            map.setFilter('landmarks', filterExpr);
         // console.log('Filtered features count:', filtered.features.length);
     }
 
@@ -131,12 +141,39 @@ function setupUI() {
     }
 
     if (spClose && sidePanel) {
-        spClose.addEventListener('click', () => { sidePanel.style.display = 'none'; });
+        spClose.addEventListener('click', () => {
+            sidePanel.style.display = 'none';
+            // deselect
+            const mapInstance = window._nhlMapInstance;
+            if (mapInstance && mapInstance._selectedFeatureId !== null) {
+                mapInstance.setFeatureState({
+                    source: 'landmark-point-data',
+                    id: mapInstance._selectedFeatureId
+                }, { selected: false });
+                mapInstance._selectedFeatureId = null;
+            }
+        });
     }
 
     map.on('click', 'landmarks', (e) => {
-        const props = e.features[0].properties;
-        const coordinates = e.features[0].geometry.coordinates.slice();
+        const feature = e.features[0];
+        const props = feature.properties;
+        const coordinates = feature.geometry.coordinates.slice();
+
+        // remove highlight from prev selection
+        const mapInstance = window._nhlMapInstance;
+        if (mapInstance._selectedFeatureId !== null) {
+            mapInstance.setFeatureState({
+                source: 'landmark-point-data',
+                id: mapInstance._selectedFeatureId
+            }, { selected: false });
+        }
+        //highlight current selection
+        mapInstance.setFeatureState({
+            source: 'landmark-point-data',
+            id: feature.id
+        }, { selected: true });
+        mapInstance._selectedFeatureId = feature.id;
 
         map.flyTo({
             center: coordinates,
@@ -145,5 +182,28 @@ function setupUI() {
 
         if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
         if (sidePanel) sidePanel.style.display = 'flex';
+        // web pdf link in sidepanel
+            const spDesc = document.getElementById('sp-desc');
+            if (spDesc) {
+                // Build the side panel content in the requested order
+                const refId = props.ReferenceID || 'Unknown';
+                const webPdfUrl = props['Web PDF'];
+                const nhlYear = props.NHL_Year || 'Unknown';
+                const modesText = [
+                    props.Acknowledged === '1' ? 'Acknowledged' : '',
+                    props.Multiculturalism === '1' ? 'Multiculturalism' : '',
+                    props.Valorization === '1' ? 'Valorization' : '',
+                    props.Erasure === '1' ? 'Erasure' : ''
+                ].filter(Boolean).join(', ') || 'None';
+                const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
+
+                spDesc.innerHTML = `
+                    <div><strong>Reference ID:</strong> ${refId}</div>
+                    <div><strong>Web PDF:</strong> ${webPdfUrl && webPdfUrl.trim() !== '' ? `<a href="${webPdfUrl}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
+                    <div><strong>NHL Year:</strong> ${nhlYear}</div>
+                    <div><strong>Modes Text:</strong> ${modesText}</div>
+                    <div><strong>Area of Significance:</strong> ${areaOfSignificance}</div>
+                `;
+            }
     });
 }

@@ -1,7 +1,7 @@
 function mapInits() {
     mapboxgl.accessToken = 'pk.eyJ1IjoiaW5mb2dyYXBoaWNzIiwiYSI6ImNqaTR0eHhnODBjeTUzdmx0N3U2dWU5NW8ifQ.fVbTCmIrqILIzv5QGtVJ2Q';
     const map = new mapboxgl.Map({
-        style: 'mapbox://styles/mapbox/streets-v11',
+        style: 'mapbox://styles/infographics/cmlhb3rze006q01sn2k2k5qki', // frank!!!!
         container: 'map',
         center: [-132.09808, 41.09622], 
         zoom: 2.5
@@ -37,20 +37,53 @@ function addMapLayers(map) {
             type: 'circle', 
             source: 'landmark-point-data',
             paint: {
-                'circle-color': 'DarkGoldenRod',
-                'circle-radius': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    5, 4,   // >= Zoom 5, 1px radius
-                    10, 7   // >= Zoom 10, 5px radius
-                ],
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#ffffff'
+                    'circle-color': [
+                        'case',
+                            ['boolean', ['feature-state', 'selected'], false],
+                            'DarkGreen',
+                            ['case',
+                                ['==', ['get', 'Acknowledged'], '1'], '#61a5ff', 
+                                ['==', ['get', 'Multiculturalism'], '1'], '#ffb260', 
+                                ['==', ['get', 'Erasure'], '1'], '#ff6f68', 
+                                ['==', ['get', 'Valorization'], '1'], '#80b475', 
+                                '#e0ce96' //default
+                            ]
+                        ],
+                    'circle-radius': [
+                        'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            5, [
+                                'case',
+                                    ['boolean', ['feature-state', 'selected'], false],
+                                    7,
+                                    4
+                            ],
+                            10, [
+                                'case',
+                                    ['boolean', ['feature-state', 'selected'], false],
+                                    10,
+                                    7
+                            ]
+                    ],
+                    'circle-stroke-width': [
+                        'case',
+                            ['boolean', ['feature-state', 'selected'], false],
+                            3,
+                            1
+                    ],
+                    'circle-stroke-color': [
+                        'case',
+                            ['boolean', ['feature-state', 'selected'], false],
+                            'white',
+                            '#ffffff'
+                    ]
             }
         });
     
     });
+    // track the current selected feature/site
+    map._selectedFeatureId = null;
 
     const popup = new mapboxgl.Popup({
         closeButton: false,
