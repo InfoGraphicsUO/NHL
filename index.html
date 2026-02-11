@@ -4,9 +4,11 @@
         <meta charset="utf-8">
         <title>Monumental Denial - National Historic Landmarks</title>
         <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+        <link rel="preconnect" href="https://kit.fontawesome.com" crossorigin>
         <link href="https://api.mapbox.com/mapbox-gl-js/v3.13.0/mapbox-gl.css" rel="stylesheet">
         <script src="https://api.mapbox.com/mapbox-gl-js/v3.13.0/mapbox-gl.js"></script>
         <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script defer src="https://kit.fontawesome.com/be4ea184d4.js" crossorigin="anonymous"></script>
 
         <script src="js/ui.js"></script>
         <script src="js/map.js"></script>
@@ -17,22 +19,20 @@
     <!-- Combined Filters for Forms of White Supremacy and Modes of Representation -->
     <div id="sidebar-container">
         <div id="filter-panel">
-            <div class="filter-header">
-                <span id="filter-toggle">&#9650;</span>
-            </div>
+            <span id="filter-toggle"><i class="fa-duotone fa-regular fa-angle-up"></i></span>
             <div id="filter-content">
                 <strong>Forms of White Supremacy</strong><br>
-                <label><input type="checkbox" class="supremacy-filter" value="Colonization" checked> Colonization</label><br>
-                <label><input type="checkbox" class="supremacy-filter" value="Nation_Building" checked> Nation Building</label><br>
-                <label><input type="checkbox" class="supremacy-filter" value="Settler_Colonization" checked> Settler Colonization</label><br>
-                <label><input type="checkbox" class="supremacy-filter" value="Slavery" checked> Slavery</label><br>
-                <label><input type="checkbox" class="supremacy-filter" value="State_Formation" checked> State Formation</label><br>
+                <label><input type="checkbox" class="supremacy-filter" value="Colonization" checked> Colonization</label>
+                <label><input type="checkbox" class="supremacy-filter" value="Nation_Building" checked> Nation Building</label>
+                <label><input type="checkbox" class="supremacy-filter" value="Settler_Colonization" checked> Settler Colonization</label>
+                <label><input type="checkbox" class="supremacy-filter" value="Slavery" checked> Slavery</label>
+                <label><input type="checkbox" class="supremacy-filter" value="State_Formation" checked> State Formation</label>
                 <label><input type="checkbox" class="supremacy-filter" value="Racial_Capitalism" checked> Racial Capitalism</label>
                 <hr>
                 <strong>Modes of Representation</strong><br>
-                <label><input type="checkbox" class="mode-filter" value="Acknowledged" checked style="accent-color:#aec7e8"> Acknowledged</label><br>
-                <label><input type="checkbox" class="mode-filter" value="Multiculturalism" checked style="accent-color:#ffdab3"> Multiculturalism</label><br>
-                <label><input type="checkbox" class="mode-filter" value="Valorization" checked style="accent-color:#98df8a"> Valorization</label><br>
+                <label><input type="checkbox" class="mode-filter" value="Acknowledged" checked style="accent-color:#aec7e8"> Acknowledged</label>
+                <label><input type="checkbox" class="mode-filter" value="Multiculturalism" checked style="accent-color:#ffdab3"> Multiculturalism</label>
+                <label><input type="checkbox" class="mode-filter" value="Valorization" checked style="accent-color:#98df8a"> Valorization</label>
                 <label><input type="checkbox" class="mode-filter" value="Erasure" checked style="accent-color:#f7b6b2"> Erasure</label>
             </div>
         </div>
@@ -40,8 +40,8 @@
         <!-- Side Panel Template -->
         <div id="side-panel">
             <div class="side-panel-header">
-                <h3 id="sp-title"></h3>
-                <span id="sp-close">&#10005;</span>
+                <h3 id="side-panel-title"></h3>
+                <span id="side-panel-close">&#10005;</span>
             </div>
             <div id="sp-desc">Site description</div>
         </div>

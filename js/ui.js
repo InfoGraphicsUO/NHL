@@ -1,6 +1,7 @@
 $(document).ready(function() {
     mapInits();
     setTimeout(setupUI, 500);
+    updateSidePanelVisibility();
 });
 
 function getSelectedSupremacyForms() {
@@ -129,20 +130,19 @@ function setupUI() {
     const filterToggle = document.getElementById('filter-toggle');
     const filterContent = document.getElementById('filter-content');
     const sidePanel = document.getElementById('side-panel');
-    const spTitle = document.getElementById('sp-title');
-    const spClose = document.getElementById('sp-close');
+    const spTitle = document.getElementById('side-panel-title');
+    const spClose = document.getElementById('side-panel-close');
 
     if (filterToggle && filterContent) {
         filterToggle.addEventListener('click', function() {
             const isHidden = filterContent.style.display === 'none';
             filterContent.style.display = isHidden ? 'block' : 'none';
-            filterToggle.innerHTML = isHidden ? '&#9650;' : '&#9660;';
+            filterToggle.innerHTML = isHidden ? '<i class="fa-duotone fa-regular fa-angle-up"></i>' : '<i class="fa-duotone fa-regular fa-angle-down"></i>';
         });
     }
 
     if (spClose && sidePanel) {
         spClose.addEventListener('click', () => {
-            sidePanel.style.display = 'none';
             // deselect
             const mapInstance = window._nhlMapInstance;
             if (mapInstance && mapInstance._selectedFeatureId !== null) {
@@ -152,6 +152,7 @@ function setupUI() {
                 }, { selected: false });
                 mapInstance._selectedFeatureId = null;
             }
+            updateSidePanelVisibility();
         });
     }
 
@@ -181,29 +182,41 @@ function setupUI() {
         });
 
         if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
-        if (sidePanel) sidePanel.style.display = 'flex';
+        updateSidePanelVisibility();
         // web pdf link in sidepanel
-            const spDesc = document.getElementById('sp-desc');
-            if (spDesc) {
-                // Build the side panel content in the requested order
-                const refId = props.ReferenceID || 'Unknown';
-                const webPdfUrl = props['Web PDF'];
-                const nhlYear = props.NHL_Year || 'Unknown';
-                const modesText = [
-                    props.Acknowledged === '1' ? 'Acknowledged' : '',
-                    props.Multiculturalism === '1' ? 'Multiculturalism' : '',
-                    props.Valorization === '1' ? 'Valorization' : '',
-                    props.Erasure === '1' ? 'Erasure' : ''
-                ].filter(Boolean).join(', ') || 'None';
-                const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
+        const spDesc = document.getElementById('sp-desc');
+        if (spDesc) {
+            const refId = props.ReferenceID || 'Unknown';
+            const webPdfUrl = props['Web PDF'];
+            const nhlYear = props.NHL_Year || 'Unknown';
+            const modesText = [
+                props.Acknowledged === '1' ? 'Acknowledged' : '',
+                props.Multiculturalism === '1' ? 'Multiculturalism' : '',
+                props.Valorization === '1' ? 'Valorization' : '',
+                props.Erasure === '1' ? 'Erasure' : ''
+            ].filter(Boolean).join(', ') || 'None';
+            const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
 
-                spDesc.innerHTML = `
-                    <div><strong>Reference ID:</strong> ${refId}</div>
-                    <div><strong>Web PDF:</strong> ${webPdfUrl && webPdfUrl.trim() !== '' ? `<a href="${webPdfUrl}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
-                    <div><strong>NHL Year:</strong> ${nhlYear}</div>
-                    <div><strong>Modes Text:</strong> ${modesText}</div>
-                    <div><strong>Area of Significance:</strong> ${areaOfSignificance}</div>
-                `;
-            }
+            spDesc.innerHTML = `
+                <div><strong>Reference ID:</strong> ${refId}</div>
+                <div><strong>Web PDF:</strong> ${webPdfUrl && webPdfUrl.trim() !== '' ? `<a href="${webPdfUrl}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
+                <div><strong>NHL Year:</strong> ${nhlYear}</div>
+                <div><strong>Modes Text:</strong> ${modesText}</div>
+                <div><strong>Area of Significance:</strong> ${areaOfSignificance}</div>
+            `;
+        }
     });
+}
+
+function updateSidePanelVisibility() {
+    // prevents empty side panel on refresh
+    const sidePanel = document.getElementById('side-panel');
+    const mapInstance = window._nhlMapInstance;
+    if (sidePanel) {
+        if (mapInstance && mapInstance._selectedFeatureId != null) {
+            sidePanel.style.display = 'flex';
+        } else {
+            sidePanel.style.display = 'none';
+        }
+    }
 }
