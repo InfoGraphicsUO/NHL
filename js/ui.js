@@ -83,6 +83,8 @@ function setupUI() {
             yearValue.textContent = this.value;
             filterAll();
         });
+
+        // modes of rep switch function
         document.querySelectorAll('.supremacy-filter, .mode-filter').forEach(cb => {
             cb.addEventListener('change', filterAll);
             let label = cb.closest('label');
