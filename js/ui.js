@@ -201,9 +201,9 @@ function setupUI() {
 
             spDesc.innerHTML = `
                 <div><strong>Reference ID:</strong> ${refId}</div>
-                <div><strong>Web PDF:</strong> ${webPdfUrl && webPdfUrl.trim() !== '' ? `<a href="${webPdfUrl}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
-                <div><strong>NHL Year:</strong> ${nhlYear}</div>
-                <div><strong>Modes Text:</strong> ${modesText}</div>
+                <div><strong>Nomination Form:</strong> ${webPdfUrl && webPdfUrl.trim() !== '' ? `<a href="${webPdfUrl}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
+                <div><strong>Year Designated:</strong> ${nhlYear}</div>
+                <div><strong>Modes of Representation:</strong> ${modesText}</div>
                 <div><strong>Area of Significance:</strong> ${areaOfSignificance}</div>
             `;
         }
