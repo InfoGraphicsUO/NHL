@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="doubles" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+        stroke-width: .05px;
+      }
+
+      .cls-2 {
+        fill: #a4d285;
+      }
+
+      .cls-3 {
+        fill: #fad9b1;
+      }
+    </style>
+  </defs>
+  <path class="cls-3" d="M10,.67C4.85.67.67,4.85.67,10s4.18,9.33,9.33,9.33"/>
+  <path class="cls-2" d="M10,19.33c5.15,0,9.33-4.18,9.33-9.33S15.15.67,10,.67"/>
+  <line class="cls-1" x1="10" y1=".67" x2="10" y2="19.33"/>
+</svg>

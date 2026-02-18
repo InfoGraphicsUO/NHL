@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Triples" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f2b6b1;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+        stroke-width: .05px;
+      }
+
+      .cls-2 {
+        fill: #aec3e5;
+      }
+
+      .cls-3 {
+        fill: #a4d285;
+      }
+    </style>
+  </defs>
+  <path class="cls-1" d="M1.93,5.34c-.79,1.37-1.26,2.96-1.26,4.66s.46,3.29,1.26,4.66l8.07-4.66V.67C6.55.67,3.54,2.55,1.93,5.34Z"/>
+  <path class="cls-3" d="M18.07,5.34C16.46,2.55,13.45.67,10,.67v9.33l8.07,4.66c.79-1.37,1.26-2.96,1.26-4.66s-.46-3.29-1.26-4.66Z"/>
+  <path class="cls-2" d="M10,10L1.93,14.66c1.61,2.79,4.62,4.67,8.07,4.67s6.46-1.88,8.07-4.67l-8.07-4.66Z"/>
+</svg>
