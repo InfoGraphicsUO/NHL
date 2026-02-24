@@ -29,59 +29,79 @@ function addMapLayers(map) {
         map.addSource('landmark-point-data', {
             type: 'geojson',
             generateId: true,   // required for feature-state-based interactions
-            data: '/data/NHL IGL Database - NHLDB.geojson' 
+            data: '/data/NHL IGL Database - NHLDB.geojson'
         });
+
+        // define icons
+    const icons = {
+        'a':   'img/A.png',
+        'ae':  'img/AE.png',
+        'am':  'img/AM.png',
+        'av':  'img/AV.png',
+        'b':   'img/B.png',
+        'e':   'img/E.png',
+        'eva': 'img/EVA.png',
+        'm':   'img/M.png',
+        'me':  'img/ME.png',
+        'mv':  'img/MV.png',
+        'mva': 'img/MVA.png',
+        'v':   'img/V.png',
+        've':  'img/VE.png',
+        's': 'path/to/s.png',
+    };
+
+    console.log(
+        icons
+    )
+
+
+        
+        Object.entries(icons).forEach(([id, url]) => {
+            map.loadImage(url, (error, image) => {
+            if (error) throw error;
+            map.addImage(id, image); // id used in icon-image
+            });
+        })
+
+
 
         map.addLayer({
             id: 'landmarks',
-            type: 'circle', 
+            type: 'symbol', 
             source: 'landmark-point-data',
-            paint: {
-                    'circle-color': [
-                        'case',
-                            ['boolean', ['feature-state', 'selected'], false],
-                            'DarkGreen',
+            layout: {
+                    'icon-image': 
                             ['case',
-                                ['==', ['get', 'Acknowledged'], '1'], '#61a5ff', 
-                                ['==', ['get', 'Multiculturalism'], '1'], '#ffb260', 
-                                ['==', ['get', 'Erasure'], '1'], '#ff6f68', 
-                                ['==', ['get', 'Valorization'], '1'], '#80b475', 
-                                '#e0ce96' //default
-                            ]
-                        ],
-                    'circle-radius': [
+                                ['==', ['get', 'Acknowledged'], '1'], 'a', 
+                                ['==', ['get', 'Multiculturalism'], '1'], 'm', 
+                                ['==', ['get', 'Erasure'], '1'], 'e', 
+                                ['==', ['get', 'Valorization'], '1'], 'v', 
+                                'b' //default
+                            ],
+                    'icon-size': [
                         'interpolate',
                             ['linear'],
                             ['zoom'],
-                            5, [
-                                'case',
-                                    ['boolean', ['feature-state', 'selected'], false],
-                                    7,
-                                    4
-                            ],
-                            10, [
-                                'case',
-                                    ['boolean', ['feature-state', 'selected'], false],
-                                    10,
-                                    7
-                            ]
+                                3,
+                                0.3, 10, .3
                     ],
-                    'circle-stroke-width': [
-                        'case',
-                            ['boolean', ['feature-state', 'selected'], false],
-                            3,
-                            1
-                    ],
-                    'circle-stroke-color': [
-                        'case',
-                            ['boolean', ['feature-state', 'selected'], false],
-                            'white',
-                            '#ffffff'
-                    ]
+                        'icon-allow-overlap': true
             }
+        });
+        map.addLayer({
+            id: 'selected',
+            type: 'symbol',
+            source: 'landmark-point-data',
+            layout: {
+                'icon-image': 's', // The 's' icon
+                'icon-size': 0.5,   // Make it slightly bigger!
+                'icon-allow-overlap': true
+            },
+            filter: ['==', ['id'], ''] // Filter out everything by default
         });
     
     });
+
     // track the current selected feature/site
     map._selectedFeatureId = null;
 
