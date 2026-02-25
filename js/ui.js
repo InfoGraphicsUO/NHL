@@ -1,3 +1,17 @@
+
+const isNoneCondition = ["all",
+    ["!=", ["coalesce", ["get", "Acknowledged"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "Multiculturalism"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "Valorization"], '0'], '1'], 
+    ["!=", ["coalesce", ["get", "Erasure"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "Colonization"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "Nation_Building"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "Settler_Colonization"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "Slavery"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "State_Formation"], '0'], '1'],
+    ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1']
+];
+
 $(document).ready(function() {
     mapInits();
     setTimeout(setupUI, 500);

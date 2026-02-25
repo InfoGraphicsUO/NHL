@@ -47,7 +47,7 @@ function addMapLayers(map) {
         'mva': 'img/MVA.png',
         'v':   'img/V.png',
         've':  'img/VE.png',
-        's': 'path/to/s.png',
+        's': 'img/s.png',
     };
 
     console.log(
@@ -72,32 +72,52 @@ function addMapLayers(map) {
             layout: {
                     'icon-image': 
                             ['case',
+                                ['all', ['==', ['get', 'Acknowledged'], '1'], ['==', ['get', 'Erasure'], '1'], ['==', ['get', 'Valorization'], '1']], 'eva',
+                                ['all', ['==', ['get', 'Acknowledged'], '1'], ['==', ['get', 'Multiculturalism'], '1'], ['==', ['get', 'Valorization'], '1']], 'mva',
+                                ['all', ['==', ['get', 'Acknowledged'], '1'], ['==', ['get', 'Erasure'], '1']], 'ae',
+                                ['all', ['==', ['get', 'Acknowledged'], '1'], ['==', ['get', 'Multiculturalism'], '1']], 'am',
+                                ['all', ['==', ['get', 'Acknowledged'], '1'], ['==', ['get', 'Valorization'], '1']], 'av',
+                                ['all', ['==', ['get', 'Erasure'], '1'], ['==', ['get', 'Multiculturalism'], '1']], 'me',
+                                ['all', ['==', ['get', 'Valorization'], '1'], ['==', ['get', 'Multiculturalism'], '1']], 'mv',
+                                ['all', ['==', ['get', 'Valorization'], '1'], ['==', ['get', 'Erasure'], '1']], 've',
                                 ['==', ['get', 'Acknowledged'], '1'], 'a', 
                                 ['==', ['get', 'Multiculturalism'], '1'], 'm', 
                                 ['==', ['get', 'Erasure'], '1'], 'e', 
                                 ['==', ['get', 'Valorization'], '1'], 'v', 
+                                ['all', 
+                                    ["!=", ["coalesce", ["get", "Acknowledged"], '0'], '1'],
+                                    ["!=", ["coalesce", ["get", "Multiculturalism"], '0'], '1'],
+                                    ["!=", ["get", "Valorization"], '1'], 
+                                    ["!=", ["coalesce", ["get", "Erasure"], '0'], '1'],
+                                    ["!=", ["coalesce", ["get", "Colonization"], '0'], '1'],
+                                    ["!=", ["coalesce", ["get", "Nation Building"], '0'], '1'],
+                                    ["!=", ["coalesce", ["get", "Settler_Colonization"], '0'], '1'],
+                                    ["!=", ["coalesce", ["get", "Slavery"], '0'], '1'],
+                                    ["!=", ["coalesce", ["get", "State_Formation"], '0'], '1'],
+                                    ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1'],
+                                ], 'b',
                                 'b' //default
                             ],
-                    'icon-size': [
-                        'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                                3,
-                                0.3, 10, .3
-                    ],
+                    // 'icon-size': [
+                    //     'interpolate',
+                    //         ['linear'],
+                    //         ['zoom'],
+                    //             3,
+                    //             0.3, 10, .3
+                    // ],
                         'icon-allow-overlap': true
             }
         });
         map.addLayer({
-            id: 'selected',
+            id: 'landmarks-selected',
             type: 'symbol',
             source: 'landmark-point-data',
             layout: {
-                'icon-image': 's', // The 's' icon
-                'icon-size': 0.5,   // Make it slightly bigger!
+                'icon-image': 's',
+                'icon-size': 2,   
                 'icon-allow-overlap': true
             },
-            filter: ['==', ['id'], ''] // Filter out everything by default
+            filter: ['==', ['id'], -1] 
         });
     
     });
