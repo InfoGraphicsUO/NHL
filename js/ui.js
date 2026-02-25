@@ -1,5 +1,5 @@
 
-const isNoneCondition = ["all",
+const NoneCondition = ["all",
     ["!=", ["coalesce", ["get", "Acknowledged"], '0'], '1'],
     ["!=", ["coalesce", ["get", "Multiculturalism"], '0'], '1'],
     ["!=", ["coalesce", ["get", "Valorization"], '0'], '1'], 
