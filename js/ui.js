@@ -68,6 +68,7 @@ function setupUI() {
         const year = parseInt(document.getElementById('year-slider').value);
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
+        const isNoneSelected = modes.includes("None");
             let filterExpr = ["all"];
             filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
             // year filter
@@ -86,6 +87,9 @@ function setupUI() {
                 modes.forEach(m => {
                     modesExpr.push(["==", ["get", m], "1"]);
                 });
+                    if (isNoneSelected) {
+                        modesExpr.push(NoneCondition);
+                    }
                 filterExpr.push(modesExpr);
             }
             map.setFilter('landmarks', filterExpr);
