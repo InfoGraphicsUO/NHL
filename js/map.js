@@ -22,7 +22,24 @@ function mapInits() {
     map.on('dragend', logMapState);
 }
 
+function toggleMethodSymbology() {
+  methodSymbologyEnabled = document.getElementById("methodSymbologySwitch").checked;
+    const colorMap = {
+    'Acknowledged': '#aec7e8',
+    'Multiculturalism': '#ffdab3',
+    'Valorization': '#98df8a',
+    'Erasure': '#f7b6b2',
+    'None': '#be92c4'
+    };
 
+  document.querySelectorAll('.mode-filter').forEach(checkbox => {
+    if (isEnabled) {
+      checkbox.style.accentColor = colorMap[checkbox.value];
+    } else {
+      checkbox.style.accentColor = '#b8860b'; 
+    }
+  });
+}
 
 function addMapLayers(map) {
     map.on('load', () => {
@@ -98,13 +115,6 @@ function addMapLayers(map) {
                                 ], 'b',
                                 'b' //default
                             ],
-                    // 'icon-size': [
-                    //     'interpolate',
-                    //         ['linear'],
-                    //         ['zoom'],
-                    //             3,
-                    //             0.3, 10, .3
-                    // ],
                         'icon-allow-overlap': true
             }
         });
