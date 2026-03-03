@@ -22,24 +22,31 @@ function mapInits() {
     map.on('dragend', logMapState);
 }
 
-function toggleMethodSymbology() {
-  methodSymbologyEnabled = document.getElementById("methodSymbologySwitch").checked;
+function togglemodeSymbology() {
+  const isEnabled = modeSymbologyEnabled = document.getElementById("modeSymbologySwitch").checked;
+  const map = window._nhlMapInstance
     const colorMap = {
     'Acknowledged': '#aec7e8',
     'Multiculturalism': '#ffdab3',
     'Valorization': '#98df8a',
     'Erasure': '#f7b6b2',
-    'None': '#be92c4'
+    'None': '#be92c4',
     };
 
   document.querySelectorAll('.mode-filter').forEach(checkbox => {
-    if (isEnabled) {
-      checkbox.style.accentColor = colorMap[checkbox.value];
-    } else {
-      checkbox.style.accentColor = '#b8860b'; 
-    }
-  });
-}
+        checkbox.style.accentColor = isEnabled
+      ? colorMap[checkbox.value]
+      : '#b8860b';
+   });
+
+  if (isEnabled) {
+    map.setLayoutProperty('landmarks', 'visibility', 'visible');
+    map.setLayoutProperty('circle', 'visibility', 'none');
+  } else {
+    map.setLayoutProperty('landmarks', 'visibility', 'none');
+    map.setLayoutProperty('circle', 'visibility', 'visible');
+  }
+  };
 
 function addMapLayers(map) {
     map.on('load', () => {
@@ -48,7 +55,7 @@ function addMapLayers(map) {
             generateId: true,   // required for feature-state-based interactions
             data: '/data/NHL IGL Database - NHLDB.geojson'
         });
-
+    
         // define icons
     const icons = {
         'a':   'img/A.png',
@@ -65,14 +72,19 @@ function addMapLayers(map) {
         'v':   'img/V.png',
         've':  'img/VE.png',
         's': 'img/s.png',
+        'bb': 'img/bb.png'
     };
-
-    console.log(
-        icons
-    )
-
-
         
+        map.addLayer({
+            id: 'circle',
+            type: 'symbol',
+            source: 'landmark-point-data',
+            layout: {
+                'icon-image': 'bb',
+                'icon-allow-overlap': true
+            },
+        });
+
         Object.entries(icons).forEach(([id, url]) => {
             map.loadImage(url, (error, image) => {
             if (error) throw error;
@@ -80,13 +92,14 @@ function addMapLayers(map) {
             });
         })
 
-
+        togglemodeSymbology();
 
         map.addLayer({
             id: 'landmarks',
             type: 'symbol', 
             source: 'landmark-point-data',
             layout: {
+                'visibility': 'none',
                     'icon-image': 
                             ['case',
                                 ['all', ['==', ['get', 'Acknowledged'], '1'], ['==', ['get', 'Erasure'], '1'], ['==', ['get', 'Valorization'], '1']], 'eva',
@@ -169,3 +182,4 @@ function addMapLayers(map) {
     });
 
 }
+
