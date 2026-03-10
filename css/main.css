@@ -148,8 +148,8 @@ label.mode-label:hover {
     padding: 3px 5px;
     border-radius: 20px;
     width: fit-content;
-    background-image: linear-gradient(to bottom right, rgba(143, 142, 142, 0.651), rgba(211, 206, 206, 0.425));
-    border: 1.5px solid #333;
+    /* background-image: linear-gradient(to bottom right, rgba(143, 142, 142, 0.651), rgba(211, 206, 206, 0.425));
+    border: 1.5px solid #333; */
     margin-left: -7px;
 }
 
@@ -185,4 +185,8 @@ label.mode-label:hover {
     cursor: pointer;
     line-height: 1;
     gap: 4px;
+}
+
+.form-check-input {
+    background-color: rgb(192, 191, 191) !important;
 }
