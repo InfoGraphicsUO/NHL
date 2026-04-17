@@ -68,24 +68,36 @@ function setupUI() {
         const year = parseInt(document.getElementById('year-slider').value);
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
+        // "None" selection
         const isNoneSelected = modes.includes("None");
+        const isFOWSNoneSelected = supremacy.includes("None");
             let filterExpr = ["all"];
             filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
             // year filter
             filterExpr.push(["<=", ["to-number", ["get", "Form Year"]], year]);
+
             // supremacy filter
             if (supremacy.length > 0) {
                 let supremacyExpr = ["any"];
                 supremacy.forEach(s => {
+                if (s !== "None") {
                     supremacyExpr.push(["==", ["get", s], "1"]);
+                }
                 });
+                if(isFOWSNoneSelected) {
+                    supremacyExpr.push(NoneCondition);
+                }
                 filterExpr.push(supremacyExpr);
-            }
+                
+             }
+
             // modes filter
             if (modes.length > 0) {
                 let modesExpr = ["any"];
                 modes.forEach(m => {
+                    if (m !== "None") {
                     modesExpr.push(["==", ["get", m], "1"]);
+                    }
                 });
                     if (isNoneSelected) {
                         modesExpr.push(NoneCondition);
@@ -94,6 +106,10 @@ function setupUI() {
             }
             map.setFilter('landmarks', filterExpr);
         // console.log('Filtered features count:', filtered.features.length);
+                        // add filter to symbology layer that activates on by defualt
+                if (map.getLayer('circle')) {
+                    map.setFilter('circle', filterExpr);
+                }
     }
 
     function onSourceReady() {
