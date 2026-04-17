@@ -13,6 +13,10 @@
         <script src="js/ui.js"></script>
         <script src="js/map.js"></script>
 
+          <!-- noUiSlider (Year selection filter) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+
         <link rel="stylesheet" href="css/main.css">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
@@ -62,8 +66,8 @@
 
     <!-- Time Slider for Form Year -->
     <div id="slider-panel">
-        <label for="year-slider">Form Year: <span id="year-value"></span></label>
-        <input type="range" id="year-slider" min="1950" max="2026" value="2026" step="1">
+        <label for="year-slider">Form Year: <br><span id="year-value"></span></label>
+        <div id="year-slider"></div>
     </div>
 
     </body>

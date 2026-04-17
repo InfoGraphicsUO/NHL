@@ -30,11 +30,31 @@ function setupUI() {
     console.log('setupUI()');
     const yearSlider = document.getElementById('year-slider');
     const yearValue = document.getElementById('year-value');
-    if (!(yearSlider && yearValue)) {
-        console.warn('Year slider or value element not found');
-        return;
-    }
-    yearValue.textContent = yearSlider.value;
+
+        if (!(yearSlider && yearValue)) {
+            console.warn('Year slider or value element not found');
+            return;
+        }
+
+        // initialize noUiSlider
+        noUiSlider.create(yearSlider, {
+            start: [1950, 2026],
+            step: 1,
+            range: {
+                min: 1950,
+                max: 2026
+            },
+            connect: true,
+            tooltips: false,
+            behaviour: 'drag',
+            format: {
+                to: value => Math.round(value),
+                from: value => Number(value)
+            }
+        });
+
+        // set initial display
+        yearValue.textContent = 2026;
 
     const map = window._nhlMapInstance;
     let originalData = null;
@@ -65,7 +85,9 @@ function setupUI() {
             }
         }
         // get current filter values
-        const year = parseInt(document.getElementById('year-slider').value);
+        const range = yearSlider.noUiSlider.get();
+        const minYear = parseInt(range[0]);
+        const maxYear = parseInt(range[1]);
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
         // "None" selection
@@ -74,7 +96,11 @@ function setupUI() {
             let filterExpr = ["all"];
             filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
             // year filter
-            filterExpr.push(["<=", ["to-number", ["get", "Form Year"]], year]);
+            filterExpr.push([
+                "all",
+                [">=", ["to-number", ["get", "Form Year"]], minYear],
+                ["<=", ["to-number", ["get", "Form Year"]], maxYear]
+            ]);
 
             // supremacy filter
             if (supremacy.length > 0) {
@@ -113,8 +139,8 @@ function setupUI() {
     }
 
     function onSourceReady() {
-        yearSlider.addEventListener('input', function() {
-            yearValue.textContent = this.value;
+        yearSlider.noUiSlider.on('update', function(values, handle) {
+            yearValue.textContent = `${values[0]} – ${values[1]}`;;
             filterAll();
         });
 
