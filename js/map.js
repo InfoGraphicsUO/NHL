@@ -7,6 +7,8 @@ function mapInits() {
         zoom: 2.5
     });
 
+    console.log(map.getZoom());
+    
     // global map instance
     window._nhlMapInstance = map;
     addMapLayers(map)
@@ -41,10 +43,10 @@ function togglemodeSymbology() {
 
   if (isEnabled) {
     map.setLayoutProperty('landmarks', 'visibility', 'visible');
-    map.setLayoutProperty('circle', 'visibility', 'none');
+    map.setLayoutProperty('nosymbologylandmark', 'visibility', 'none');
   } else {
     map.setLayoutProperty('landmarks', 'visibility', 'none');
-    map.setLayoutProperty('circle', 'visibility', 'visible');
+    map.setLayoutProperty('nosymbologylandmark', 'visibility', 'visible');
   }
   };
 
@@ -72,16 +74,44 @@ function addMapLayers(map) {
         'v':   'img/V.png',
         've':  'img/VE.png',
         's': 'img/s.png',
-        'bb': 'img/bb.png'
+        'bb': 'img/bb.png',
+        'g': 'img/G.png'
     };
+
+map.addLayer({
+            id: 'backgroundlandmark',
+            type: 'symbol',
+            source: 'landmark-point-data',
+            layout: {
+                'icon-image': 'g',
+                'icon-allow-overlap': true,
+                'icon-size': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    5, 1,
+                    15, 5
+                ]
+  },
+              paint: {
+    'icon-opacity': 0.5  // opacity
+  }
+});
         
         map.addLayer({
-            id: 'circle',
+            id: 'nosymbologylandmark',
             type: 'symbol',
             source: 'landmark-point-data',
             layout: {
                 'icon-image': 'bb',
-                'icon-allow-overlap': true
+                'icon-allow-overlap': true,
+                'icon-size': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    5, 1,
+                    15, 5
+                ]
             },
         });
 
@@ -126,9 +156,16 @@ function addMapLayers(map) {
                                     ["!=", ["coalesce", ["get", "State_Formation"], '0'], '1'],
                                     ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1'],
                                 ], 'b',
-                                'b' //default
+                                'b', //default
                             ],
-                        'icon-allow-overlap': true
+                        'icon-allow-overlap': true,
+                        'icon-size': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            5, 1,
+                            15, 5
+                        ]
             }
         });
         map.addLayer({
@@ -137,7 +174,13 @@ function addMapLayers(map) {
             source: 'landmark-point-data',
             layout: {
                 'icon-image': 's',
-                'icon-size': 2,   
+                    'icon-size': [
+                        'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            5, 1,
+                            15, 5
+                ],  
                 'icon-allow-overlap': true
             },
             filter: ['==', ['id'], -1] 
@@ -155,7 +198,7 @@ function addMapLayers(map) {
 
     map.addInteraction('places-mouseenter-interaction', {
         type: 'mouseenter',
-        target: { layerId: 'landmarks' },
+        target: { layerId: 'backgroundlandmark' },
         handler: (e) => {
             map.getCanvas().style.cursor = 'pointer';
 
@@ -174,7 +217,7 @@ function addMapLayers(map) {
 
     map.addInteraction('places-mouseleave-interaction', {
         type: 'mouseleave',
-        target: { layerId: 'landmarks' },
+        target: { layerId: 'backgroundlandmark' },
         handler: () => {
             map.getCanvas().style.cursor = '';
             popup.remove();

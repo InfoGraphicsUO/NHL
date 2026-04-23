@@ -133,8 +133,8 @@ function setupUI() {
             map.setFilter('landmarks', filterExpr);
         // console.log('Filtered features count:', filtered.features.length);
                         // add filter to symbology layer that activates on by defualt
-                if (map.getLayer('circle')) {
-                    map.setFilter('circle', filterExpr);
+                if (map.getLayer('nosymbologylandmark')) {
+                    map.setFilter('nosymbologylandmark', filterExpr);
                 }
     }
 
@@ -218,7 +218,7 @@ function setupUI() {
         });
     }
 
-    map.on('click', 'landmarks', (e) => {
+    map.on('click', 'backgroundlandmark', (e) => {
         const feature = e.features[0];
         const props = feature.properties;
         const coordinates = feature.geometry.coordinates.slice();
