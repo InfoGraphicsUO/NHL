@@ -89,8 +89,8 @@ map.addLayer({
                     'interpolate',
                     ['linear'],
                     ['zoom'],
-                    5, 1,
-                    15, 5
+                    5, 0.5,
+                    15, 2
                 ]
   },
               paint: {
@@ -109,8 +109,8 @@ map.addLayer({
                     'interpolate',
                     ['linear'],
                     ['zoom'],
-                    5, 1,
-                    15, 5
+                    5, 0.5,
+                    15, 2
                 ]
             },
         });
@@ -178,8 +178,8 @@ map.addLayer({
                         'interpolate',
                             ['linear'],
                             ['zoom'],
-                            5, 1,
-                            15, 5
+                            5, 0.5,
+                            15, 2
                 ],  
                 'icon-allow-overlap': true
             },
