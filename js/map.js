@@ -93,9 +93,6 @@ map.addLayer({
                     15, 2
                 ]
   },
-              paint: {
-    'icon-opacity': 0.5  // opacity
-  }
 });
         
         map.addLayer({
