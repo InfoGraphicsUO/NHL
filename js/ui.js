@@ -227,7 +227,6 @@ function setupUI() {
         });
     }
 
-    const landmarkLayers = ['landmarks', 'nosymbologylandmark'];
     const handleLandmarkClick = (e) => {
         const feature = e.features[0];
         const props = feature.properties;
@@ -278,9 +277,7 @@ function setupUI() {
             `;
         }
     };
-    landmarkLayers.forEach(layerId => {
-        map.on('click', layerId, handleLandmarkClick);
-    });
+    map.on('click', 'backgroundlandmark', handleLandmarkClick);
 }
 
 function updateSidePanelVisibility() {

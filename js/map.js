@@ -139,8 +139,17 @@ function addMapLayers(map) {
         15, 0.5
     ];
 
+        map.addLayer({
+            id: 'backgroundlandmark',
+            type: 'symbol',
+            source: 'landmark-point-data',
+            layout: {
+                'icon-image': 'g',
+                'icon-allow-overlap': true,
+                'icon-size': iconSize,
+            },
+        });
 
-        
         map.addLayer({
             id: 'nosymbologylandmark',
             type: 'symbol',
@@ -218,7 +227,7 @@ function addMapLayers(map) {
         closeOnClick: false
     });
 
-    const landmarkLayers = ['landmarks', 'nosymbologylandmark'];
+    const landmarkLayers = ['backgroundlandmark'];
 
     const showLandmarkPopup = (e) => {
         map.getCanvas().style.cursor = 'pointer';
