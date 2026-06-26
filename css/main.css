@@ -1,6 +1,28 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
 
+:root {
+    --filter-gold: #b8860b;
+    --mode-acknowledged: #aec7e8;
+    --mode-multiculturalism: #ffdab3;
+    --mode-valorization: #98df8a;
+    --mode-erasure: #f7b6b2;
+    --mode-none: #be92c4;
+    --modal-filter-gold: #956d09;
+    --modal-mode-acknowledged: #5b81b3;
+    --modal-mode-multiculturalism: #a46523;
+    --modal-mode-valorization: #457e3a;
+    --modal-mode-erasure: #c64f48;
+    --modal-mode-none: #9b73a0;
+    --white: #fff;
+    --hover-cream: #f5f5dc;
+    --slider-track: #c6c6c6;
+    --slider-handle: #fcfbfb;
+    --slider-handle-hover: #ebebeb;
+    --switch-off: rgb(192, 191, 191);
+    --filter-color-transition-duration: 200ms;
+}
+
 body, html {
     font-family: 'Montserrat', Arial, Helvetica, sans-serif;
     line-height: 1.25rem;
@@ -47,10 +69,76 @@ body {
 }
 .supremacy-filter,
 .mode-filter {
-    accent-color: #b8860b; 
+    --checkbox-color: var(--modal-filter-gold);
     width: 1.2em;
     height: 1.2em;
     margin-right: 0.5em;
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-grid;
+    place-content: center;
+    flex-shrink: 0;
+    border: 2px solid var(--checkbox-color);
+    border-radius: 3px;
+    background-color: var(--white);
+    cursor: pointer;
+    transition: none;
+    user-select: none;
+}
+
+.supremacy-filter::before,
+.mode-filter::before {
+    content: "";
+    width: 0.55em;
+    height: 0.55em;
+    background-color: var(--white);
+    clip-path: polygon(14% 44%, 0 58%, 39% 100%, 100% 18%, 85% 5%, 37% 68%); /* makes checkmark polygon! */
+    opacity: 0;
+    transform: scale(0.75);
+}
+
+.symbology-colors-changing .mode-filter {
+    transition:
+        background-color var(--filter-color-transition-duration) ease,
+        border-color var(--filter-color-transition-duration) ease;
+}
+
+.mode-filter[value="Acknowledged"] {
+    --mode-symbol-color: var(--modal-mode-acknowledged);
+}
+
+.mode-filter[value="Multiculturalism"] {
+    --mode-symbol-color: var(--modal-mode-multiculturalism);
+}
+
+.mode-filter[value="Valorization"] {
+    --mode-symbol-color: var(--modal-mode-valorization);
+}
+
+.mode-filter[value="Erasure"] {
+    --mode-symbol-color: var(--modal-mode-erasure);
+}
+
+.mode-filter[value="None"] {
+    --mode-symbol-color: var(--modal-mode-none);
+}
+
+.supremacy-filter:checked,
+.mode-filter:checked {
+    background-color: var(--checkbox-color);
+    border-color: var(--checkbox-color);
+}
+
+.supremacy-filter:checked::before,
+.mode-filter:checked::before {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.supremacy-filter:focus-visible,
+.mode-filter:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--checkbox-color) 55%, #000);
+    outline-offset: 2px;
 }
 label.supremacy-label,
 label.mode-label {
@@ -63,12 +151,12 @@ label.mode-label {
 }
 label.supremacy-label:hover,
 label.mode-label:hover {
-    background: #f5f5dc;
+    background: var(--hover-cream);
 }
 #year-slider {
     width: 18.75rem;
     margin: 1.5em 0;
-    accent-color: #b8860b;
+    accent-color: var(--filter-gold);
     align-items: center;
 }
 #year-value {
@@ -87,7 +175,8 @@ label.mode-label:hover {
 
 #filter-content label {
     cursor: pointer;
-    display:flex;
+    display: flex;
+    user-select: none;
 }
 
 #side-panel {
@@ -151,6 +240,7 @@ label.mode-label:hover {
     /* background-image: linear-gradient(to bottom right, rgba(143, 142, 142, 0.651), rgba(211, 206, 206, 0.425));
     border: 1.5px solid #333; */
     margin-left: -7px;
+    user-select: none;
 }
 
 .mode-symbology-switch .form-check {
@@ -165,16 +255,18 @@ label.mode-label:hover {
     cursor: pointer;
     flex-shrink: 0;
     height: 22px;
-    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.15);
+    /* box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.15); */
 }
 
-.mode-symbology-switch .form-check-label {
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: start;
-    font-size: 10px;
-    cursor: pointer;
-    gap: 4px;
+.mode-symbology-switch .form-check-input:focus {
+    /* gets rid of default blue focus outline */
+    box-shadow: none !important;
+    border-color: transparent !important;
+}
+
+.mode-symbology-switch .form-switch .form-check-input:focus {
+    --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+    background-image: var(--bs-form-switch-bg) !important;
 }
 
 .mode-symbology-switch .form-check-label {
@@ -183,12 +275,20 @@ label.mode-label:hover {
     align-items: start;
     font-size: 1rem;
     cursor: pointer;
-    line-height: 1;
     gap: 4px;
+    margin-left: -0.5rem;
+    user-select: none;
 }
 
-.form-check-input {
-    background-color: rgb(192, 191, 191) !important;
+.mode-symbology-switch .form-switch .form-check-input {
+    background-color: var(--switch-off) !important;
+    border-color: transparent !important;
+    --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+    background-image: var(--bs-form-switch-bg) !important;
+}
+
+.mode-symbology-switch .form-switch .form-check-input:checked {
+    background-color: var(--filter-gold) !important;
 }
 
 /* slider CSS */
@@ -201,7 +301,7 @@ label.mode-label:hover {
 
 /* noUiSlider target styling */
 #year-slider.noUi-target {
-    background: #C6C6C6;
+    background: var(--slider-track);
     border-radius: 4px;
     border: none;
     box-shadow: none;
@@ -210,7 +310,7 @@ label.mode-label:hover {
 
 /* Year slider connect bar (selected range) */
 #year-slider .noUi-connect {
-    background: #b8860b;
+    background: var(--filter-gold);
 }
 
 /* Year filter handles */
@@ -218,7 +318,7 @@ label.mode-label:hover {
     width: 18px;
     height: 18px;
     border-radius: 100%;
-    background: #fcfbfb;
+    background: var(--slider-handle);
     box-shadow: none;
     cursor: pointer;
     top: -8px;
@@ -226,7 +326,7 @@ label.mode-label:hover {
 }
 
 #year-slider .noUi-handle:hover {
-    background: #ebebeb;
+    background: var(--slider-handle-hover);
 }
 
 #year-slider .noUi-handle:active {

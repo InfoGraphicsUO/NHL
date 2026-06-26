@@ -24,22 +24,33 @@ function mapInits() {
     map.on('dragend', logMapState);
 }
 
-function togglemodeSymbology() {
+function togglemodeSymbology(animateColors = false) {
   const isEnabled = modeSymbologyEnabled = document.getElementById("modeSymbologySwitch").checked;
-  const map = window._nhlMapInstance
-    const colorMap = {
-    'Acknowledged': '#aec7e8',
-    'Multiculturalism': '#ffdab3',
-    'Valorization': '#98df8a',
-    'Erasure': '#f7b6b2',
-    'None': '#be92c4',
-    };
+  const map = window._nhlMapInstance;
+  const filterContent = document.getElementById('filter-content');
+
+  if (animateColors && filterContent) {
+    const transitionDuration = getComputedStyle(document.documentElement)
+      .getPropertyValue('--filter-color-transition-duration')
+      .trim();
+    const parsedTransitionMs = transitionDuration.endsWith('ms')
+      ? parseFloat(transitionDuration)
+      : parseFloat(transitionDuration) * 1000;
+    const transitionMs = Number.isFinite(parsedTransitionMs) ? parsedTransitionMs : 200;
+
+    filterContent.classList.add('symbology-colors-changing');
+    // Force the transition class to apply before changing the checkbox color variables.
+    filterContent.offsetWidth;
+    window.clearTimeout(filterContent._symbologyColorTimer);
+    filterContent._symbologyColorTimer = window.setTimeout(() => {
+      filterContent.classList.remove('symbology-colors-changing');
+    }, transitionMs + 50);
+  }
 
   document.querySelectorAll('.mode-filter').forEach(checkbox => {
-        checkbox.style.accentColor = isEnabled
-      ? colorMap[checkbox.value]
-      : '#b8860b';
-   });
+    const checkboxColor = isEnabled ? 'var(--mode-symbol-color)' : 'var(--modal-filter-gold)';
+    checkbox.style.setProperty('--checkbox-color', checkboxColor);
+  });
 
   if (!map || !map.getLayer('landmarks') || !map.getLayer('nosymbologylandmark')) {
     return;
