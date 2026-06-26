@@ -227,7 +227,8 @@ function setupUI() {
         });
     }
 
-    map.on('click', 'backgroundlandmark', (e) => {
+    const landmarkLayers = ['landmarks', 'nosymbologylandmark'];
+    const handleLandmarkClick = (e) => {
         const feature = e.features[0];
         const props = feature.properties;
         const coordinates = feature.geometry.coordinates.slice();
@@ -276,6 +277,9 @@ function setupUI() {
                 <div><strong>Area of Significance:</strong> ${areaOfSignificance}</div>
             `;
         }
+    };
+    landmarkLayers.forEach(layerId => {
+        map.on('click', layerId, handleLandmarkClick);
     });
 }
 

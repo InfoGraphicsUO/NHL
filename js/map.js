@@ -88,6 +88,19 @@ function filterBasemapLabelsToUS(map) {
     });
 }
 
+function addMapIcon(map, id, url) {
+    const image = new Image();
+    image.onload = () => {
+        if (!map.hasImage(id)) {
+            map.addImage(id, image);
+        }
+    };
+    image.onerror = () => {
+        console.warn(`Could not load map icon: ${url}`);
+    };
+    image.src = url;
+}
+
 function addMapLayers(map) {
     map.on('load', () => {
         filterBasemapLabelsToUS(map);
@@ -100,40 +113,33 @@ function addMapLayers(map) {
     
         // define icons
     const icons = {
-        'a':   'img/A.png',
-        'ae':  'img/AE.png',
-        'am':  'img/AM.png',
-        'av':  'img/AV.png',
-        'b':   'img/B.png',
-        'e':   'img/E.png',
-        'eva': 'img/EVA.png',
-        'm':   'img/M.png',
-        'me':  'img/ME.png',
-        'mv':  'img/MV.png',
-        'mva': 'img/MVA.png',
-        'v':   'img/V.png',
-        've':  'img/VE.png',
-        's': 'img/S.png',
-        'bb': 'img/bb.png',
-        'g': 'img/G.png'
+        'a':   'img/A.svg',
+        'ae':  'img/AE.svg',
+        'am':  'img/AM.svg',
+        'av':  'img/AV.svg',
+        'b':   'img/B.svg',
+        'e':   'img/E.svg',
+        'eva': 'img/EVA.svg',
+        'm':   'img/M.svg',
+        'me':  'img/ME.svg',
+        'mv':  'img/MV.svg',
+        'mva': 'img/MVA.svg',
+        'v':   'img/V.svg',
+        've':  'img/VE.svg',
+        's': 'img/S.svg',
+        'bb': 'img/bb.svg',
+        'g': 'img/G.svg'
     };
 
-map.addLayer({
-            id: 'backgroundlandmark',
-            type: 'symbol',
-            source: 'landmark-point-data',
-            layout: {
-                'icon-image': 'g',
-                'icon-allow-overlap': true,
-                'icon-size': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    5, 0.5,
-                    15, 2
-                ]
-  },
-});
+    const iconSize = [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        5, 0.1,
+        15, 0.5
+    ];
+
+
         
         map.addLayer({
             id: 'nosymbologylandmark',
@@ -142,21 +148,12 @@ map.addLayer({
             layout: {
                 'icon-image': 'bb',
                 'icon-allow-overlap': true,
-                'icon-size': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    5, 0.5,
-                    15, 2
-                ]
+                'icon-size': iconSize,
             },
         });
 
         Object.entries(icons).forEach(([id, url]) => {
-            map.loadImage(url, (error, image) => {
-            if (error) throw error;
-            map.addImage(id, image); // id used in icon-image
-            });
+            addMapIcon(map, id, url);
         })
 
         map.addLayer({
@@ -194,13 +191,7 @@ map.addLayer({
                                 'b', //default
                             ],
                         'icon-allow-overlap': true,
-                        'icon-size': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            5, 0.5,
-                            15, 2
-                        ]
+                        'icon-size': iconSize,
             }
         });
         map.addLayer({
@@ -209,13 +200,7 @@ map.addLayer({
             source: 'landmark-point-data',
             layout: {
                 'icon-image': 's',
-                    'icon-size': [
-                        'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            5, 0.5,
-                            15, 2
-                ],  
+                    'icon-size': iconSize,
                 'icon-allow-overlap': true
             },
             filter: ['==', ['id'], -1] 
@@ -233,32 +218,36 @@ map.addLayer({
         closeOnClick: false
     });
 
-    map.addInteraction('places-mouseenter-interaction', {
-        type: 'mouseenter',
-        target: { layerId: 'backgroundlandmark' },
-        handler: (e) => {
-            map.getCanvas().style.cursor = 'pointer';
+    const landmarkLayers = ['landmarks', 'nosymbologylandmark'];
 
-            // coordinates from the point
-            const coordinates = e.feature.geometry.coordinates.slice();
-            const props = e.feature.properties;
-            const name = props.Historic_Name;
-            const formYear = props["Form Year"] || 'Unknown';
+    const showLandmarkPopup = (e) => {
+        map.getCanvas().style.cursor = 'pointer';
 
-            // popup html
-            const html = `<div style="min-width:180px"><strong>${name}</strong><br><span>Form year: ${formYear}</span></div>`;
-            // Populate the popup 
-            popup.setLngLat(coordinates).setHTML(html).addTo(map);
-        }
-    });
+        const coordinates = e.feature.geometry.coordinates.slice();
+        const props = e.feature.properties;
+        const name = props.Historic_Name;
+        const formYear = props["Form Year"] || 'Unknown';
+        const html = `<div style="min-width:180px"><strong>${name}</strong><br><span>Form year: ${formYear}</span></div>`;
+        popup.setLngLat(coordinates).setHTML(html).addTo(map);
+    };
 
-    map.addInteraction('places-mouseleave-interaction', {
-        type: 'mouseleave',
-        target: { layerId: 'backgroundlandmark' },
-        handler: () => {
-            map.getCanvas().style.cursor = '';
-            popup.remove();
-        }
+    const hideLandmarkPopup = () => {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+    };
+
+    landmarkLayers.forEach(layerId => {
+        map.addInteraction(`places-mouseenter-${layerId}`, {
+            type: 'mouseenter',
+            target: { layerId },
+            handler: showLandmarkPopup
+        });
+
+        map.addInteraction(`places-mouseleave-${layerId}`, {
+            type: 'mouseleave',
+            target: { layerId },
+            handler: hideLandmarkPopup
+        });
     });
 
 }
