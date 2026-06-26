@@ -31,6 +31,7 @@ function getSelectedModes() {
 function setupUI() {
     console.log('setupUI()');
     const yearSlider = document.getElementById('year-slider');
+    const yearReset = document.getElementById('year-reset');
 
         if (!yearSlider) {
             console.warn('Year slider element not found');
@@ -145,6 +146,12 @@ function setupUI() {
         yearSlider.noUiSlider.on('update', function(values, handle) {
             filterAll();
         });
+
+        if (yearReset) {
+            yearReset.addEventListener('click', function() {
+                yearSlider.noUiSlider.set([YEAR_SLIDER_MIN, YEAR_SLIDER_MAX]);
+            });
+        }
 
         // modes of rep switch function
         document.querySelectorAll('.supremacy-filter, .mode-filter').forEach(cb => {
