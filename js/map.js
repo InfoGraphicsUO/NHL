@@ -55,7 +55,7 @@ function addMapLayers(map) {
         map.addSource('landmark-point-data', {
             type: 'geojson',
             generateId: true,   // required for feature-state-based interactions
-            data: '/data/NHL IGL Database - NHLDB.geojson'
+            data: 'data/NHL IGL Database - NHLDB.geojson'
         });
     
         // define icons
@@ -73,7 +73,7 @@ function addMapLayers(map) {
         'mva': 'img/MVA.png',
         'v':   'img/V.png',
         've':  'img/VE.png',
-        's': 'img/s.png',
+        's': 'img/S.png',
         'bb': 'img/bb.png',
         'g': 'img/G.png'
     };
@@ -222,4 +222,3 @@ map.addLayer({
     });
 
 }
-

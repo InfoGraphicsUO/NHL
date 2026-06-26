@@ -129,6 +129,8 @@ function setupUI() {
                         modesExpr.push(NoneCondition);
                     }
                 filterExpr.push(modesExpr);
+            } else {
+                filterExpr.push(["==", ["literal", true], false]);
             }
             map.setFilter('landmarks', filterExpr);
         // console.log('Filtered features count:', filtered.features.length);
