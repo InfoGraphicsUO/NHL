@@ -54,8 +54,33 @@ function togglemodeSymbology() {
   }
   };
 
+function filterBasemapLabelsToUS(map) {
+    // filter POI and state labels to just the US
+    const usIsoFilter = [
+        "any",
+        ["==", ["get", "iso_3166_1"], "US"],
+        ["==", ["get", "iso_3166_1_alpha_3"], "USA"],
+        ["==", ["slice", ["coalesce", ["get", "iso_3166_2"], ""], 0, 2], "US"]
+    ];
+    const labelLayerIds = ["poi-label", "state-label"];
+
+    map.getStyle().layers.forEach(layer => {
+        if (!labelLayerIds.includes(layer.id)) {
+            return;
+        }
+
+        const existingFilter = map.getFilter(layer.id);
+        map.setFilter(layer.id, existingFilter
+            ? ["all", existingFilter, usIsoFilter]
+            : usIsoFilter
+        );
+    });
+}
+
 function addMapLayers(map) {
     map.on('load', () => {
+        filterBasemapLabelsToUS(map);
+
         map.addSource('landmark-point-data', {
             type: 'geojson',
             generateId: true,   // required for feature-state-based interactions
