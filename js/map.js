@@ -41,6 +41,10 @@ function togglemodeSymbology() {
       : '#b8860b';
    });
 
+  if (!map || !map.getLayer('landmarks') || !map.getLayer('nosymbologylandmark')) {
+    return;
+  }
+
   if (isEnabled) {
     map.setLayoutProperty('landmarks', 'visibility', 'visible');
     map.setLayoutProperty('nosymbologylandmark', 'visibility', 'none');
@@ -119,8 +123,6 @@ map.addLayer({
             });
         })
 
-        togglemodeSymbology();
-
         map.addLayer({
             id: 'landmarks',
             type: 'symbol', 
@@ -182,6 +184,8 @@ map.addLayer({
             },
             filter: ['==', ['id'], -1] 
         });
+
+        togglemodeSymbology();
     
     });
 
