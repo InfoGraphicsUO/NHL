@@ -11,6 +11,8 @@ const NoneCondition = ["all",
     ["!=", ["coalesce", ["get", "State_Formation"], '0'], '1'],
     ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1']
 ];
+const YEAR_SLIDER_MIN = 1950;
+const YEAR_SLIDER_MAX = 2026;
 
 $(document).ready(function() {
     mapInits();
@@ -29,32 +31,28 @@ function getSelectedModes() {
 function setupUI() {
     console.log('setupUI()');
     const yearSlider = document.getElementById('year-slider');
-    const yearValue = document.getElementById('year-value');
 
-        if (!(yearSlider && yearValue)) {
-            console.warn('Year slider or value element not found');
+        if (!yearSlider) {
+            console.warn('Year slider element not found');
             return;
         }
 
         // initialize noUiSlider
         noUiSlider.create(yearSlider, {
-            start: [1950, 2026],
+            start: [YEAR_SLIDER_MIN, YEAR_SLIDER_MAX],
             step: 1,
             range: {
-                min: 1950,
-                max: 2026
+                min: YEAR_SLIDER_MIN,
+                max: YEAR_SLIDER_MAX
             },
             connect: true,
-            tooltips: false,
+            tooltips: true,
             behaviour: 'drag',
             format: {
                 to: value => Math.round(value),
                 from: value => Number(value)
             }
         });
-
-        // set initial display
-        yearValue.textContent = 2026;
 
     const map = window._nhlMapInstance;
     let originalData = null;
@@ -90,17 +88,20 @@ function setupUI() {
         const maxYear = parseInt(range[1]);
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
+        const isFullYearRange = minYear === YEAR_SLIDER_MIN && maxYear === YEAR_SLIDER_MAX;
         // "None" selection
         const isNoneSelected = modes.includes("None");
         const isFOWSNoneSelected = supremacy.includes("None");
             let filterExpr = ["all"];
-            filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
-            // year filter
-            filterExpr.push([
-                "all",
-                [">=", ["to-number", ["get", "Form Year"]], minYear],
-                ["<=", ["to-number", ["get", "Form Year"]], maxYear]
-            ]);
+            if (!isFullYearRange) {
+                filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
+                // year filter
+                filterExpr.push([
+                    "all",
+                    [">=", ["to-number", ["get", "Form Year"]], minYear],
+                    ["<=", ["to-number", ["get", "Form Year"]], maxYear]
+                ]);
+            }
 
             // supremacy filter
             if (supremacy.length > 0) {
@@ -142,7 +143,6 @@ function setupUI() {
 
     function onSourceReady() {
         yearSlider.noUiSlider.on('update', function(values, handle) {
-            yearValue.textContent = `${values[0]} – ${values[1]}`;;
             filterAll();
         });
 

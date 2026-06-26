@@ -155,13 +155,9 @@ label.mode-label:hover {
 }
 #year-slider {
     width: 18.75rem;
-    margin: 1.5em 0;
+    margin: 2em 0;
     accent-color: var(--filter-gold);
     align-items: center;
-}
-#year-value {
-    font-weight: bold;
-    margin-left: 0.5em;
 }
 
 #filter-toggle {
@@ -215,6 +211,7 @@ label.mode-label:hover {
 #slider-panel {
     position: absolute;
     display: flex;
+    align-items: center;
     bottom: 1.875rem;
     left: 50%;
     transform: translateX(-50%);
@@ -229,6 +226,7 @@ label.mode-label:hover {
     position: relative;
     align-self: center;
     padding-right: 1rem;
+    white-space: nowrap;
 }
 
 /* mode symbology switch */
@@ -339,8 +337,8 @@ label.mode-label:hover {
     display: none;
 }
 
-/* noUiSlider tooltips */
-/* #year-slider .noUi-tooltip {
+/* noUiSlider year labels */
+#year-slider .noUi-tooltip {
     font-size: 12px;
     color: #8a8383;
     border: 0;
@@ -350,4 +348,14 @@ label.mode-label:hover {
     min-width: 42px;
     text-align: center;
     white-space: nowrap;
-} */
+}
+
+#year-slider .noUi-handle-lower .noUi-tooltip {
+    top: 16px;
+    bottom: auto;
+}
+
+#year-slider .noUi-handle-upper .noUi-tooltip {
+    top: auto;
+    bottom: 16px;
+}
