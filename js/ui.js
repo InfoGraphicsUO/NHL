@@ -28,6 +28,16 @@ function getSelectedModes() {
     return Array.from(document.querySelectorAll('.mode-filter:checked')).map(cb => cb.value);
 }
 
+function isValidWebPdfUrl(value) {
+    // some strings in web pdf col are just text notes and not urls
+    try {
+        const url = new URL(String(value).trim());
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 function setupUI() {
     console.log('setupUI()');
     const yearSlider = document.getElementById('year-slider');
@@ -259,6 +269,7 @@ function setupUI() {
         if (spDesc) {
             const refId = props.ReferenceID || 'Unknown';
             const webPdfUrl = props['Web PDF'];
+            const webPdfLink = isValidWebPdfUrl(webPdfUrl) ? webPdfUrl.trim() : '';
             const nhlYear = props.NHL_Year || 'Unknown';
             const modesText = [
                 props.Acknowledged === '1' ? 'Acknowledged' : '',
@@ -270,7 +281,7 @@ function setupUI() {
 
             spDesc.innerHTML = `
                 <div><strong>Reference ID:</strong> ${refId}</div>
-                <div><strong>Nomination Form:</strong> ${webPdfUrl && webPdfUrl.trim() !== '' ? `<a href="${webPdfUrl}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
+                <div><strong>Nomination Form:</strong> ${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
                 <div><strong>Year Designated:</strong> ${nhlYear}</div>
                 <div><strong>Modes of Representation:</strong> ${modesText}</div>
                 <div><strong>Area of Significance:</strong> ${areaOfSignificance}</div>
