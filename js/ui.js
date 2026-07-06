@@ -28,6 +28,25 @@ function getSelectedModes() {
     return Array.from(document.querySelectorAll('.mode-filter:checked')).map(cb => cb.value);
 }
 
+function showCopyFeedback(button) {
+    const feedback = button.parentElement.querySelector('.copy-ref-id-feedback');
+    if (!feedback) return;
+
+    feedback.classList.remove('fade-out');
+    feedback.classList.add('visible');
+
+    clearTimeout(feedback._hideTimer);
+    clearTimeout(feedback._removeTimer);
+
+    feedback._hideTimer = setTimeout(() => {
+        feedback.classList.add('fade-out');
+    }, 1000);
+
+    feedback._removeTimer = setTimeout(() => {
+        feedback.classList.remove('visible', 'fade-out');
+    }, 1500);
+}
+
 function isValidWebPdfUrl(value) {
     // some strings in web pdf col are just text notes and not urls
     try {
@@ -179,11 +198,19 @@ function setupUI() {
             spDesc.innerHTML = `
                 <div class="side-panel-field">
                     <div class="side-panel-label">Reference ID</div>
-                    <div class="side-panel-value">${refId}</div>
+                    <div class="side-panel-value reference-id-row">
+                        <span class="reference-id-text">${refId}</span>
+                        <span class="copy-ref-id-wrap">
+                            <button type="button" class="copy-ref-id-btn" aria-label="Copy Reference ID">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                            <span class="copy-ref-id-feedback" aria-hidden="true">Copied to clipboard!</span>
+                        </span>
+                    </div>
                 </div>
                 <div class="side-panel-field">
                     <div class="side-panel-label">Nomination Form</div>
-                    <div class="side-panel-value">${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener">View Nomination Form <i style="font-size: 0.75rem; margin-bottom: 0.01rem;" class="fa-solid fa-arrow-up-right-from-square"></i></a>` : 'No Web PDF available.'}</div>
+                    <div class="side-panel-value">${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener" style="color: var(--filter-gold);">View Nomination Form <i style="font-size: 0.75rem; margin-bottom: 0.01rem;" class="fa-solid fa-arrow-up-right-from-square"></i></a>` : 'No Web PDF available.'}</div>
                 </div>
                 <div class="side-panel-field">
                     <div class="side-panel-label">Year Designated</div>
@@ -198,6 +225,16 @@ function setupUI() {
                     <div class="side-panel-value">${areaOfSignificance}</div>
                 </div>
             `;
+
+            const copyBtn = spDesc.querySelector('.copy-ref-id-btn');
+            const refText = spDesc.querySelector('.reference-id-text');
+            if (copyBtn && refText) {
+                copyBtn.addEventListener('click', () => {
+                    const id = refText.textContent.trim();
+                    if (!id || id === 'Unknown') return;
+                    navigator.clipboard.writeText(id).then(() => showCopyFeedback(copyBtn));
+                });
+            }
         }
     }
 
