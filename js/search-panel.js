@@ -37,6 +37,7 @@ function setupSearchPanel(map, selectLandmark) {
         searchResults.hidden = false;
         currentSearchMatches = matches;
         activeSearchIndex = 0;
+        const isReferenceIdSearch = /\d/.test(searchInput?.value || ''); // check if the search is for a reference ID
 
         if (matches.length === 0) {
             // message when no results are found
@@ -52,7 +53,19 @@ function setupSearchPanel(map, selectLandmark) {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'search-result-row';
-            button.textContent = feature.properties?.Historic_Name || 'Unknown Site';
+            const name = document.createElement('span');
+            name.textContent = feature.properties?.Historic_Name || 'Unknown Site';
+            button.appendChild(name);
+
+            const referenceId = feature.properties?.ReferenceID;
+            if (isReferenceIdSearch && referenceId) {
+                // if user is searching by ID, display reference ID in parenthesis
+                const reference = document.createElement('span');
+                reference.className = 'search-result-reference-id';
+                reference.textContent = ` (${referenceId})`;
+                button.appendChild(reference);
+            }
+
             button.addEventListener('mouseenter', () => {
                 setActiveSearchIndex(index);
             });
@@ -74,9 +87,21 @@ function setupSearchPanel(map, selectLandmark) {
         if (!query) return [];
 
         const features = map._landmarkSourceData?.features || [];
+        const hasNumber = /\d/.test(query);
         return features.filter(feature => {
             const name = feature.properties?.Historic_Name || '';
-            return name.toLowerCase().includes(query);
+            const referenceId = feature.properties?.ReferenceID || '';
+            return name.toLowerCase().includes(query) || referenceId.toString().toLowerCase().includes(query);
+        }).sort((a, b) => {
+            if (!hasNumber) return 0;
+
+            const aReferenceId = (a.properties?.ReferenceID || '').toString().toLowerCase();
+            const bReferenceId = (b.properties?.ReferenceID || '').toString().toLowerCase();
+            const aStartsWithQuery = aReferenceId.startsWith(query);
+            const bStartsWithQuery = bReferenceId.startsWith(query);
+
+            if (aStartsWithQuery === bStartsWithQuery) return 0;
+            return aStartsWithQuery ? -1 : 1;
         });
     }
 

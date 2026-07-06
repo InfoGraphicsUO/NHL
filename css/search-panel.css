@@ -88,6 +88,11 @@
     border-bottom: 0;
 }
 
+.search-result-reference-id {
+    color: #777;
+    font-size: 0.9em;
+}
+
 .search-result-row-active,
 .search-result-row:hover,
 .search-result-row:focus {
