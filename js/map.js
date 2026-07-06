@@ -8,7 +8,6 @@ const NHL_MAP_HOME = {
 };
 
 function initDevZoomDisplay(map) {
-    // zoom display in the bottom left corner
     if (!SHOW_DEV_ZOOM_DISPLAY) {
         return;
     }
