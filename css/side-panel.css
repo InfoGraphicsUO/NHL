@@ -1,10 +1,10 @@
 #side-panel {
     position: absolute;
-    top: 1.25rem;
+    top: 6.5rem;
     right: 1.25rem;
     width: 25rem;
     max-width: calc(100% - 2.5rem);
-    max-height: calc(100% - 6.25rem);
+    max-height: calc(100% - 22.25rem);
     box-sizing: border-box;
     background: white;
     padding: 1rem 1.5rem;

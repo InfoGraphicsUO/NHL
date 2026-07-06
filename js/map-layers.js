@@ -128,7 +128,12 @@ async function loadLandmarkSourceData() {
         throw new Error(`Could not load landmark source: ${LANDMARK_SOURCE_URL}`);
     }
 
-    return offsetDuplicateCoordinateFeatures(await response.json());
+    const geojson = offsetDuplicateCoordinateFeatures(await response.json());
+    geojson.features.forEach((feature, index) => {
+        feature.id = index;
+    });
+
+    return geojson;
 }
 
 function selectedIdFilter(selectedId) {
@@ -265,10 +270,10 @@ function addMapLayers(map) {
     map.on('load', async () => {
         filterBasemapLabelsToUS(map);
         const landmarkSourceData = await loadLandmarkSourceData();
+        map._landmarkSourceData = landmarkSourceData;
 
         map.addSource('landmark-point-data', {
             type: 'geojson',
-            generateId: true,
             data: landmarkSourceData
         });
     

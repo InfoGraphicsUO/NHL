@@ -10,6 +10,7 @@
         <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
         <script defer src="https://kit.fontawesome.com/be4ea184d4.js" crossorigin="anonymous"></script>
 
+        <script src="js/search-panel.js"></script>
         <script src="js/ui.js"></script>
         <script src="js/map-layers.js"></script>
         <script src="js/map.js"></script>
@@ -20,6 +21,7 @@
 
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="css/map.css">
+        <link rel="stylesheet" href="css/search-panel.css">
         <link rel="stylesheet" href="css/filter-panel.css">
         <link rel="stylesheet" href="css/slider-panel.css">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -62,6 +64,17 @@
                     </section>
                 </div>
             </div>
+        </div>
+
+        <div id="search-panel">
+            <!-- <label for="monument-search">Search Monuments</label> -->
+            <div class="search-input-wrap">
+                <input type="search" id="monument-search" placeholder="Search by monument name" autocomplete="off">
+                <button type="button" id="search-submit" aria-label="Search">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            <div id="search-results" aria-live="polite"></div>
         </div>
 
         <!-- Side Panel Template -->

@@ -65,6 +65,11 @@ function setupUI() {
     });
 
     const map = window._nhlMapInstance;
+    const filterToggle = document.getElementById('filter-toggle');
+    const filterContent = document.getElementById('filter-content');
+    const sidePanel = document.getElementById('side-panel');
+    const spTitle = document.getElementById('side-panel-title');
+    const spClose = document.getElementById('side-panel-close');
 
     function filterAll() {
         const src = map.getSource('landmark-point-data');
@@ -134,7 +139,66 @@ function setupUI() {
         }
     }
 
+    function selectLandmark(feature) {
+        const props = feature.properties;
+        const coordinates = feature.geometry.coordinates.slice();
+
+        const mapInstance = window._nhlMapInstance;
+        mapInstance._selectedFeatureId = feature.id;
+        if (typeof setSelectedPointFilters === 'function') {
+            setSelectedPointFilters(mapInstance);
+        }
+
+        map.flyTo({
+            center: coordinates,
+            zoom: 13
+        });
+
+        if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
+        updateSidePanelVisibility();
+        // web pdf link in sidepanel
+        const spDesc = document.getElementById('sp-desc');
+        if (spDesc) {
+            const refId = props.ReferenceID || 'Unknown';
+            const webPdfUrl = props['Web PDF'];
+            const webPdfLink = isValidWebPdfUrl(webPdfUrl) ? webPdfUrl.trim() : '';
+            const nhlYear = props.NHL_Year || 'Unknown';
+            const modesText = [
+                props.Acknowledged === '1' ? 'Acknowledged' : '',
+                props.Multiculturalism === '1' ? 'Multiculturalism' : '',
+                props.Valorization === '1' ? 'Valorization' : '',
+                props.Erasure === '1' ? 'Erasure' : ''
+            ].filter(Boolean).join(', ') || 'None';
+            const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
+
+            spDesc.innerHTML = `
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Reference ID</div>
+                    <div class="side-panel-value">${refId}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Nomination Form</div>
+                    <div class="side-panel-value">${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener">View Nomination Form <i style="font-size: 0.75rem; margin-bottom: 0.01rem;" class="fa-solid fa-arrow-up-right-from-square"></i></a>` : 'No Web PDF available.'}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Year Designated</div>
+                    <div class="side-panel-value">${nhlYear}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Modes of Representation</div>
+                    <div class="side-panel-value">${modesText}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Area of Significance</div>
+                    <div class="side-panel-value">${areaOfSignificance}</div>
+                </div>
+            `;
+        }
+    }
+
     function onSourceReady() {
+        setupSearchPanel(map, selectLandmark);
+
         yearSlider.noUiSlider.on('update', function(values, handle) {
             filterAll();
         });
@@ -190,12 +254,6 @@ function setupUI() {
     }
 
     //sidebar and filter toggle
-    const filterToggle = document.getElementById('filter-toggle');
-    const filterContent = document.getElementById('filter-content');
-    const sidePanel = document.getElementById('side-panel');
-    const spTitle = document.getElementById('side-panel-title');
-    const spClose = document.getElementById('side-panel-close');
-
     if (filterToggle && filterContent) {
         filterToggle.addEventListener('click', function() {
             const isHidden = filterContent.style.display === 'none';
@@ -220,61 +278,7 @@ function setupUI() {
     window.addEventListener('resize', updateSidePanelHeaderMargin);
 
     const handleLandmarkClick = (e) => {
-        const feature = e.features[0];
-        const props = feature.properties;
-        const coordinates = feature.geometry.coordinates.slice();
-
-        const mapInstance = window._nhlMapInstance;
-        mapInstance._selectedFeatureId = feature.id;
-        if (typeof setSelectedPointFilters === 'function') {
-            setSelectedPointFilters(mapInstance);
-        }
-
-        map.flyTo({
-            center: coordinates,
-            zoom: 13
-        });
-
-        if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
-        updateSidePanelVisibility();
-        // web pdf link in sidepanel
-        const spDesc = document.getElementById('sp-desc');
-        if (spDesc) {
-            const refId = props.ReferenceID || 'Unknown';
-            const webPdfUrl = props['Web PDF'];
-            const webPdfLink = isValidWebPdfUrl(webPdfUrl) ? webPdfUrl.trim() : '';
-            const nhlYear = props.NHL_Year || 'Unknown';
-            const modesText = [
-                props.Acknowledged === '1' ? 'Acknowledged' : '',
-                props.Multiculturalism === '1' ? 'Multiculturalism' : '',
-                props.Valorization === '1' ? 'Valorization' : '',
-                props.Erasure === '1' ? 'Erasure' : ''
-            ].filter(Boolean).join(', ') || 'None';
-            const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
-
-            spDesc.innerHTML = `
-                <div class="side-panel-field">
-                    <div class="side-panel-label">Reference ID</div>
-                    <div class="side-panel-value">${refId}</div>
-                </div>
-                <div class="side-panel-field">
-                    <div class="side-panel-label">Nomination Form</div>
-                    <div class="side-panel-value">${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener">View Nomination Form <i style="font-size: 0.75rem; margin-bottom: 0.01rem;" class="fa-solid fa-arrow-up-right-from-square"></i></a>` : 'No Web PDF available.'}</div>
-                </div>
-                <div class="side-panel-field">
-                    <div class="side-panel-label">Year Designated</div>
-                    <div class="side-panel-value">${nhlYear}</div>
-                </div>
-                <div class="side-panel-field">
-                    <div class="side-panel-label">Modes of Representation</div>
-                    <div class="side-panel-value">${modesText}</div>
-                </div>
-                <div class="side-panel-field">
-                    <div class="side-panel-label">Area of Significance</div>
-                    <div class="side-panel-value">${areaOfSignificance}</div>
-                </div>
-            `;
-        }
+        selectLandmark(e.features[0]);
     };
     map.on('click', 'backgroundlandmark', handleLandmarkClick);
     map.on('click', 'backgroundlandmark-selected', handleLandmarkClick);
