@@ -18,17 +18,47 @@
 }
 .side-panel-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+    align-items: flex-start;
     font-size: 1.25rem;
 }
+.side-panel-header.multiline {
+    /* only titles that wrap */
+    margin-bottom: 10px;
+}
 #side-panel-close {
+    flex-shrink: 0;
+    margin-left: auto;
     font-size: 1.25rem;
     padding: 0.5rem;
     cursor: pointer;
+    line-height: 1;
 }
 #side-panel-title {
     margin: 0;
+    flex: 1;
+    min-width: 0;
+    padding-right: 0.5rem;
     font-size: 1.1em;
+    font-weight: 600;
+}
+#sp-desc {
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+#sp-desc .side-panel-field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.5rem;
+}
+#sp-desc .side-panel-field:last-child {
+    margin-bottom: 0;
+}
+#sp-desc .side-panel-label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.1rem;
+}
+#sp-desc .side-panel-value {
+    display: block;
+    font-weight: 400;
 }

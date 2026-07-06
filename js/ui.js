@@ -217,6 +217,8 @@ function setupUI() {
         });
     }
 
+    window.addEventListener('resize', updateSidePanelHeaderMargin);
+
     const handleLandmarkClick = (e) => {
         const feature = e.features[0];
         const props = feature.properties;
@@ -251,11 +253,26 @@ function setupUI() {
             const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
 
             spDesc.innerHTML = `
-                <div><strong>Reference ID:</strong> ${refId}</div>
-                <div><strong>Nomination Form:</strong> ${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener">View Nomination Form</a>` : 'No Web PDF available.'}</div>
-                <div><strong>Year Designated:</strong> ${nhlYear}</div>
-                <div><strong>Modes of Representation:</strong> ${modesText}</div>
-                <div><strong>Area of Significance:</strong> ${areaOfSignificance}</div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Reference ID</div>
+                    <div class="side-panel-value">${refId}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Nomination Form</div>
+                    <div class="side-panel-value">${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener">View Nomination Form <i style="font-size: 0.75rem; margin-bottom: 0.01rem;" class="fa-solid fa-arrow-up-right-from-square"></i></a>` : 'No Web PDF available.'}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Year Designated</div>
+                    <div class="side-panel-value">${nhlYear}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Modes of Representation</div>
+                    <div class="side-panel-value">${modesText}</div>
+                </div>
+                <div class="side-panel-field">
+                    <div class="side-panel-label">Area of Significance</div>
+                    <div class="side-panel-value">${areaOfSignificance}</div>
+                </div>
             `;
         }
     };
@@ -267,6 +284,22 @@ function setupUI() {
     map.on('click', 'landmarks-selected', handleLandmarkClick);
 }
 
+function updateSidePanelHeaderMargin() {
+    const title = document.getElementById('side-panel-title');
+    const header = title?.closest('.side-panel-header');
+    if (!title || !header) return;
+
+    const sidePanel = document.getElementById('side-panel');
+    if (!sidePanel || sidePanel.style.display === 'none') {
+        header.classList.remove('multiline');
+        return;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    header.classList.toggle('multiline', range.getClientRects().length > 1);
+}
+
 function updateSidePanelVisibility() {
     // prevents empty side panel on refresh
     const sidePanel = document.getElementById('side-panel');
@@ -274,6 +307,7 @@ function updateSidePanelVisibility() {
     if (sidePanel) {
         if (mapInstance && mapInstance._selectedFeatureId != null) {
             sidePanel.style.display = 'flex';
+            requestAnimationFrame(updateSidePanelHeaderMargin);
         } else {
             sidePanel.style.display = 'none';
         }
