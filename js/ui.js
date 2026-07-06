@@ -11,8 +11,6 @@ const NoneCondition = ["all",
     ["!=", ["coalesce", ["get", "State_Formation"], '0'], '1'],
     ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1']
 ];
-const YEAR_SLIDER_MIN = 1950;
-const YEAR_SLIDER_MAX = 2026;
 
 $(document).ready(function() {
     mapInits();
@@ -58,30 +56,10 @@ function isValidWebPdfUrl(value) {
 }
 
 function setupUI() {
-    const yearSlider = document.getElementById('year-slider');
-    const yearReset = document.getElementById('year-reset');
-
+    const yearSlider = setupYearSliderPanel();
     if (!yearSlider) {
-        console.warn('Year slider element not found');
         return;
     }
-
-    // initialize noUiSlider
-    noUiSlider.create(yearSlider, {
-        start: [YEAR_SLIDER_MIN, YEAR_SLIDER_MAX],
-        step: 1,
-        range: {
-            min: YEAR_SLIDER_MIN,
-            max: YEAR_SLIDER_MAX
-        },
-        connect: true,
-        tooltips: true,
-        behaviour: 'drag',
-        format: {
-            to: value => Math.round(value),
-            from: value => Number(value)
-        }
-    });
 
     // map instance and ui elements
     const map = window._nhlMapInstance;
@@ -99,9 +77,7 @@ function setupUI() {
         }
 
         // get current filter values
-        const range = yearSlider.noUiSlider.get();
-        const minYear = parseInt(range[0]);
-        const maxYear = parseInt(range[1]);
+        const [minYear, maxYear] = getYearSliderRange(yearSlider);
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
         const isFullYearRange = minYear === YEAR_SLIDER_MIN && maxYear === YEAR_SLIDER_MAX;
@@ -241,15 +217,9 @@ function setupUI() {
     function onSourceReady() {
         setupSearchPanel(map, selectLandmark);
 
-        yearSlider.noUiSlider.on('update', function(values, handle) {
+        onYearSliderUpdate(yearSlider, function() {
             filterAll();
         });
-
-        if (yearReset) {
-            yearReset.addEventListener('click', function() {
-                yearSlider.noUiSlider.set([YEAR_SLIDER_MIN, YEAR_SLIDER_MAX]);
-            });
-        }
 
         // modes of rep switch function
         document.querySelectorAll('.supremacy-filter, .mode-filter').forEach(cb => {

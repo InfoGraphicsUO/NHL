@@ -102,6 +102,21 @@
     white-space: nowrap;
 }
 
+#year-slider .year-tooltip-input {
+    width: 42px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    padding: 0;
+}
+
+#year-slider .year-tooltip-input:focus {
+    outline: 1px solid var(--filter-gold);
+    background: white;
+}
+
 #year-slider .noUi-handle-lower .noUi-tooltip {
     top: 16px;
     bottom: auto;
