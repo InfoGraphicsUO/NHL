@@ -1,0 +1,29 @@
+#map { 
+    position: absolute; top: 0; bottom: 0; width: 100%; 
+}
+
+.mapboxgl-ctrl-home button {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.mapboxgl-ctrl-top-left {
+    top: 0.7rem;
+    left: calc(1.25rem + 20rem);
+}
+
+.dev-zoom-display {
+    position: absolute;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    z-index: 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.85);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.25rem 0.4rem;
+    border-radius: 0.1875rem;
+    pointer-events: none;
+    user-select: none;
+}
