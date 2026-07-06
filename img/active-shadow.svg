@@ -1,3 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <circle cx="38" cy="39" r="25" fill="rgba(0,0,0,0.36)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="-16 -16 96 96">
+  <defs>
+    <filter id="shadow-blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+  <circle cx="38" cy="39" r="25" fill="rgba(0,0,0,0.8)" filter="url(#shadow-blur)"/>
 </svg>
