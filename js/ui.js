@@ -64,6 +64,7 @@ function setupUI() {
         }
     });
 
+    // map instance and ui elements
     const map = window._nhlMapInstance;
     const filterToggle = document.getElementById('filter-toggle');
     const filterContent = document.getElementById('filter-content');
@@ -130,8 +131,10 @@ function setupUI() {
         }
 
         if (typeof setActivePointFilters === 'function') {
+            // if the function is defined, use it to set the active point filters
             setActivePointFilters(map, filterExpr);
         } else {
+            // if the function is not defined, use the default filter
             map.setFilter('landmarks', filterExpr);
             if (map.getLayer('nosymbologylandmark')) {
                 map.setFilter('nosymbologylandmark', filterExpr);
@@ -140,6 +143,7 @@ function setupUI() {
     }
 
     function selectLandmark(feature) {
+        // select the landmark and update the map and side panel
         const props = feature.properties;
         const coordinates = feature.geometry.coordinates.slice();
 
@@ -171,6 +175,7 @@ function setupUI() {
             ].filter(Boolean).join(', ') || 'None';
             const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
 
+            // create the side panel description
             spDesc.innerHTML = `
                 <div class="side-panel-field">
                     <div class="side-panel-label">Reference ID</div>

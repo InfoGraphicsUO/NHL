@@ -69,6 +69,7 @@ function iconSizeZoom(scale = 1) {
 }
 
 function shadowIconLayout() {
+    // this defines the layout of the shadow icon (the shadow is a separate layer)
     return {
         'icon-image': 'active-shadow',
         'icon-allow-overlap': true,
@@ -88,10 +89,13 @@ function getCoordinates(feature) {
 }
 
 function coordinateKey(coordinates) {
+    // split the coordinates into a string
     return coordinates.map(value => String(value)).join(',');
 }
 
 function offsetDuplicateCoordinateFeatures(geojson) {
+    // some monuments have identical coordinates
+    // we create an offset for duplicate coordinates so they can be hovered/clicked separately
     const coordinateGroups = new Map();
     geojson.features.forEach(feature => {
         const coordinates = getCoordinates(feature);
@@ -123,6 +127,7 @@ function offsetDuplicateCoordinateFeatures(geojson) {
 }
 
 async function loadLandmarkSourceData() {
+    // grab the landmark source data from the url
     const response = await fetch(LANDMARK_SOURCE_URL);
     if (!response.ok) {
         throw new Error(`Could not load landmark source: ${LANDMARK_SOURCE_URL}`);
@@ -232,7 +237,7 @@ function togglemodeSymbology(animateColors = false) {
 }
 
 function filterBasemapLabelsToUS(map) {
-    // Outside the US, only country names should appear; keep all label types within the US.
+    // we filter out all basemap labels that aren't in the US
     const usIsoFilter = [
         "any",
         ["==", ["get", "iso_3166_1"], "US"],
@@ -303,6 +308,7 @@ function addMapLayers(map) {
             addMapIcon(map, id, url);
         });
 
+        // inactive monument points shown with generic icon
         map.addLayer({
             id: 'backgroundlandmark',
             type: 'symbol',
@@ -315,6 +321,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // selection halo for inactive monument points
         map.addLayer({
             id: 'backgroundlandmark-halo',
             type: 'symbol',
@@ -327,6 +334,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // enlarged generic icon for selected inactive monument points
         map.addLayer({
             id: 'backgroundlandmark-selected',
             type: 'symbol',
@@ -339,6 +347,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // selection outline for inactive monument points
         map.addLayer({
             id: 'backgroundlandmark-outline',
             type: 'symbol',
@@ -351,6 +360,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // drop shadow for active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-shadow',
             type: 'symbol',
@@ -359,6 +369,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // active monument points without symbology icons
         map.addLayer({
             id: 'nosymbologylandmark',
             type: 'symbol',
@@ -371,6 +382,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // selection halo for active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-halo',
             type: 'symbol',
@@ -383,6 +395,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // enlarged icon for selected active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-selected',
             type: 'symbol',
@@ -395,6 +408,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // selection outline for active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-outline',
             type: 'symbol',
@@ -407,6 +421,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // drop shadow for active monument points with symbology
         map.addLayer({
             id: 'landmarks-shadow',
             type: 'symbol',
@@ -418,6 +433,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // active monument points with symbology icons
         map.addLayer({
             id: 'landmarks',
             type: 'symbol',
@@ -431,6 +447,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // selection halo for active monument points with symbology
         map.addLayer({
             id: 'landmarks-halo',
             type: 'symbol',
@@ -444,6 +461,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // enlarged icon for selected active monument points with symbology
         map.addLayer({
             id: 'landmarks-selected',
             type: 'symbol',
@@ -457,6 +475,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // selection outline for active monument points with symbology
         map.addLayer({
             id: 'landmarks-outline',
             type: 'symbol',
