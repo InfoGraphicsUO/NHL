@@ -39,34 +39,32 @@ function isValidWebPdfUrl(value) {
 }
 
 function setupUI() {
-    console.log('setupUI()');
     const yearSlider = document.getElementById('year-slider');
     const yearReset = document.getElementById('year-reset');
 
-        if (!yearSlider) {
-            console.warn('Year slider element not found');
-            return;
-        }
+    if (!yearSlider) {
+        console.warn('Year slider element not found');
+        return;
+    }
 
-        // initialize noUiSlider
-        noUiSlider.create(yearSlider, {
-            start: [YEAR_SLIDER_MIN, YEAR_SLIDER_MAX],
-            step: 1,
-            range: {
-                min: YEAR_SLIDER_MIN,
-                max: YEAR_SLIDER_MAX
-            },
-            connect: true,
-            tooltips: true,
-            behaviour: 'drag',
-            format: {
-                to: value => Math.round(value),
-                from: value => Number(value)
-            }
-        });
+    // initialize noUiSlider
+    noUiSlider.create(yearSlider, {
+        start: [YEAR_SLIDER_MIN, YEAR_SLIDER_MAX],
+        step: 1,
+        range: {
+            min: YEAR_SLIDER_MIN,
+            max: YEAR_SLIDER_MAX
+        },
+        connect: true,
+        tooltips: true,
+        behaviour: 'drag',
+        format: {
+            to: value => Math.round(value),
+            from: value => Number(value)
+        }
+    });
 
     const map = window._nhlMapInstance;
-    let originalData = null;
 
     function filterAll() {
         const src = map.getSource('landmark-point-data');
@@ -74,25 +72,7 @@ function setupUI() {
             console.warn('GeoJSON source not found');
             return;
         }
-        // using raw data for filtering
-        if (!originalData) {
-            let data = src._data;
-            if (typeof data === 'string') {
-                // get features from the rendered layer
-                const features = map.querySourceFeatures('landmark-point-data');
-                if (!features.length) {
-                    console.warn('No features found in rendered source');
-                    return;
-                }
-                data = { type: 'FeatureCollection', features: features.map(f => f.toJSON ? f.toJSON() : f) };
-            }
-            if (data && Array.isArray(data.features)) {
-                originalData = data;
-            } else {
-                console.warn('GeoJSON data is not ready or invalid');
-                return;
-            }
-        }
+
         // get current filter values
         const range = yearSlider.noUiSlider.get();
         const minYear = parseInt(range[0]);
@@ -103,53 +83,55 @@ function setupUI() {
         // "None" selection
         const isNoneSelected = modes.includes("None");
         const isFOWSNoneSelected = supremacy.includes("None");
-            let filterExpr = ["all"];
-            if (!isFullYearRange) {
-                filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
-                // year filter
-                filterExpr.push([
-                    "all",
-                    [">=", ["to-number", ["get", "Form Year"]], minYear],
-                    ["<=", ["to-number", ["get", "Form Year"]], maxYear]
-                ]);
-            }
+        let filterExpr = ["all"];
+        if (!isFullYearRange) {
+            filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
+            // year filter
+            filterExpr.push([
+                "all",
+                [">=", ["to-number", ["get", "Form Year"]], minYear],
+                ["<=", ["to-number", ["get", "Form Year"]], maxYear]
+            ]);
+        }
 
-            // supremacy filter
-            if (supremacy.length > 0) {
-                let supremacyExpr = ["any"];
-                supremacy.forEach(s => {
+        // supremacy filter
+        if (supremacy.length > 0) {
+            let supremacyExpr = ["any"];
+            supremacy.forEach(s => {
                 if (s !== "None") {
                     supremacyExpr.push(["==", ["get", s], "1"]);
                 }
-                });
-                if(isFOWSNoneSelected) {
-                    supremacyExpr.push(NoneCondition);
-                }
-                filterExpr.push(supremacyExpr);
-                
-             }
-
-            // modes filter
-            if (modes.length > 0) {
-                let modesExpr = ["any"];
-                modes.forEach(m => {
-                    if (m !== "None") {
-                    modesExpr.push(["==", ["get", m], "1"]);
-                    }
-                });
-                    if (isNoneSelected) {
-                        modesExpr.push(NoneCondition);
-                    }
-                filterExpr.push(modesExpr);
-            } else {
-                filterExpr.push(["==", ["literal", true], false]);
+            });
+            if (isFOWSNoneSelected) {
+                supremacyExpr.push(NoneCondition);
             }
-            map.setFilter('landmarks', filterExpr);
-        // console.log('Filtered features count:', filtered.features.length);
-                        // add filter to symbology layer that activates on by defualt
-                if (map.getLayer('nosymbologylandmark')) {
-                    map.setFilter('nosymbologylandmark', filterExpr);
+            filterExpr.push(supremacyExpr);
+        }
+
+        // modes filter
+        if (modes.length > 0) {
+            let modesExpr = ["any"];
+            modes.forEach(m => {
+                if (m !== "None") {
+                    modesExpr.push(["==", ["get", m], "1"]);
                 }
+            });
+            if (isNoneSelected) {
+                modesExpr.push(NoneCondition);
+            }
+            filterExpr.push(modesExpr);
+        } else {
+            filterExpr.push(["==", ["literal", true], false]);
+        }
+
+        if (typeof setActivePointFilters === 'function') {
+            setActivePointFilters(map, filterExpr);
+        } else {
+            map.setFilter('landmarks', filterExpr);
+            if (map.getLayer('nosymbologylandmark')) {
+                map.setFilter('nosymbologylandmark', filterExpr);
+            }
+        }
     }
 
     function onSourceReady() {
@@ -224,14 +206,12 @@ function setupUI() {
 
     if (spClose && sidePanel) {
         spClose.addEventListener('click', () => {
-            // deselect
             const mapInstance = window._nhlMapInstance;
             if (mapInstance && mapInstance._selectedFeatureId !== null) {
-                mapInstance.setFeatureState({
-                    source: 'landmark-point-data',
-                    id: mapInstance._selectedFeatureId
-                }, { selected: false });
                 mapInstance._selectedFeatureId = null;
+                if (typeof setSelectedPointFilters === 'function') {
+                    setSelectedPointFilters(mapInstance);
+                }
             }
             updateSidePanelVisibility();
         });
@@ -242,20 +222,11 @@ function setupUI() {
         const props = feature.properties;
         const coordinates = feature.geometry.coordinates.slice();
 
-        // remove highlight from prev selection
         const mapInstance = window._nhlMapInstance;
-        if (mapInstance._selectedFeatureId !== null) {
-            mapInstance.setFeatureState({
-                source: 'landmark-point-data',
-                id: mapInstance._selectedFeatureId
-            }, { selected: false });
-        }
-        //highlight current selection
-        mapInstance.setFeatureState({
-            source: 'landmark-point-data',
-            id: feature.id
-        }, { selected: true });
         mapInstance._selectedFeatureId = feature.id;
+        if (typeof setSelectedPointFilters === 'function') {
+            setSelectedPointFilters(mapInstance);
+        }
 
         map.flyTo({
             center: coordinates,
@@ -289,6 +260,11 @@ function setupUI() {
         }
     };
     map.on('click', 'backgroundlandmark', handleLandmarkClick);
+    map.on('click', 'backgroundlandmark-selected', handleLandmarkClick);
+    map.on('click', 'nosymbologylandmark', handleLandmarkClick);
+    map.on('click', 'nosymbologylandmark-selected', handleLandmarkClick);
+    map.on('click', 'landmarks', handleLandmarkClick);
+    map.on('click', 'landmarks-selected', handleLandmarkClick);
 }
 
 function updateSidePanelVisibility() {
