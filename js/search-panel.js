@@ -88,11 +88,7 @@ function setupSearchPanel(map, selectLandmark) {
 
         const features = map._landmarkSourceData?.features || [];
         const hasNumber = /\d/.test(query);
-        return features.filter(feature => {
-            const name = feature.properties?.Historic_Name || '';
-            const referenceId = feature.properties?.ReferenceID || '';
-            return name.toLowerCase().includes(query) || referenceId.toString().toLowerCase().includes(query);
-        }).sort((a, b) => {
+        return features.filter(feature => featureMatchesSearchQuery(feature, query)).sort((a, b) => {
             if (!hasNumber) return 0;
 
             const aReferenceId = (a.properties?.ReferenceID || '').toString().toLowerCase();
@@ -103,6 +99,23 @@ function setupSearchPanel(map, selectLandmark) {
             if (aStartsWithQuery === bStartsWithQuery) return 0;
             return aStartsWithQuery ? -1 : 1;
         });
+    }
+
+    function featureMatchesSearchQuery(feature, query) {
+        const props = feature.properties || {};
+        const searchableValues = [
+            props.Historic_Name,
+            props.ReferenceID,
+            props.Other_Name_s_,
+            props.Multiple_Name,
+            props.City,
+            props.County,
+            props.State,
+        ];
+
+        return searchableValues.some(value =>
+            String(value || '').toLowerCase().includes(query)
+        );
     }
 
     function submitSearch() {

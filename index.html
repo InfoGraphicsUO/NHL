@@ -83,7 +83,28 @@
         <!-- Side Panel Template -->
         <div id="side-panel">
             <div class="side-panel-header">
-                <h3 id="side-panel-title"></h3>
+                <div class="side-panel-header-text">
+                    <h3 id="side-panel-title"></h3>
+                    <div id="side-panel-location" hidden>
+                        <div class="location-line" id="location-line">
+                            <span id="side-panel-city-state"></span>
+                            <span id="address-expand-btn" class="address-expand-icon" hidden aria-hidden="true">
+                                <i class="fa-duotone fa-regular fa-angle-down"></i>
+                            </span>
+                        </div>
+                        <div id="side-panel-address" hidden>
+                            <div class="address-row">
+                                <span class="address-text"></span>
+                                <span class="copy-address-wrap">
+                                    <button type="button" class="copy-address-btn" aria-label="Copy address">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                    <span class="copy-feedback" aria-hidden="true">Copied to clipboard!</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <span id="side-panel-close">&#10005;</span>
             </div>
             <div id="sp-desc">Site description</div>

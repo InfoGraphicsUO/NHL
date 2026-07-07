@@ -26,8 +26,57 @@ function getSelectedModes() {
     return Array.from(document.querySelectorAll('.mode-filter:checked')).map(cb => cb.value);
 }
 
+function formatCityState(props) {
+    const city = (props.City || '').trim();
+    const state = (props.State || '').trim();
+    if (city && state) return `${city}, ${state}`;
+    return city || state || '';
+}
+
+function hasUsableAddress(address) {
+    const value = (address || '').trim();
+    return value.length > 0 && !/^address restricted$/i.test(value);
+}
+
+function addressContainsPart(address, part) {
+    const needle = (part || '').trim().toLowerCase();
+    if (!needle) return true;
+
+    const haystack = (address || '').trim().toLowerCase();
+    if (haystack.includes(needle)) return true;
+
+    return address.split(',').some(segment => segment.trim().toLowerCase() === needle);
+}
+
+function formatFullAddress(props) {
+    const street = (props.Address || '').trim();
+    if (!hasUsableAddress(street)) return '';
+
+    const city = (props.City || '').trim();
+    const state = (props.State || '').trim();
+    const county = (props.County || '').trim();
+
+    const parts = [street];
+    const hasCity = addressContainsPart(street, city);
+    const hasState = addressContainsPart(street, state);
+
+    if (!hasCity) {
+        if (city) {
+            parts.push(city);
+        } else if (county && !addressContainsPart(street, county)) {
+            parts.push(county);
+        }
+    }
+
+    if (!hasState && state) {
+        parts.push(state);
+    }
+
+    return parts.join(', ');
+}
+
 function showCopyFeedback(button) {
-    const feedback = button.parentElement.querySelector('.copy-ref-id-feedback');
+    const feedback = button.parentElement.querySelector('.copy-feedback');
     if (!feedback) return;
 
     feedback.classList.remove('fade-out');
@@ -132,6 +181,13 @@ function setupUI() {
     const filterContent = document.getElementById('filter-content');
     const sidePanel = document.getElementById('side-panel');
     const spTitle = document.getElementById('side-panel-title');
+    const spLocation = document.getElementById('side-panel-location');
+    const spCityState = document.getElementById('side-panel-city-state');
+    const locationLine = document.getElementById('location-line');
+    const addressExpandBtn = document.getElementById('address-expand-btn');
+    const spAddress = document.getElementById('side-panel-address');
+    const addressText = spAddress?.querySelector('.address-text');
+    const copyAddressBtn = spAddress?.querySelector('.copy-address-btn');
     const spClose = document.getElementById('side-panel-close');
     setupHoverInfoIcons(document);
 
@@ -220,7 +276,70 @@ function setupUI() {
         });
 
         if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
+        const cityState = formatCityState(props);
+        const address = (props.Address || '').trim();
+        const canShowAddress = hasUsableAddress(address);
+
+        if (spLocation && spCityState) {
+            spLocation.hidden = !cityState;
+            spCityState.textContent = cityState;
+        }
+
+        if (addressExpandBtn && spAddress && locationLine) {
+            addressExpandBtn.hidden = !canShowAddress;
+            addressExpandBtn.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down"></i>';
+            spAddress.hidden = true;
+
+            locationLine.classList.toggle('location-line-expandable', canShowAddress);
+            locationLine.removeAttribute('role');
+            locationLine.removeAttribute('tabindex');
+            locationLine.removeAttribute('aria-expanded');
+            locationLine.removeAttribute('aria-label');
+            locationLine.onclick = null;
+            locationLine.onkeydown = null;
+
+            if (canShowAddress) {
+                locationLine.setAttribute('role', 'button');
+                locationLine.setAttribute('tabindex', '0');
+                locationLine.setAttribute('aria-expanded', 'false');
+                locationLine.setAttribute('aria-label', 'Show address');
+
+                const toggleAddressExpand = () => {
+                    const isExpanded = locationLine.getAttribute('aria-expanded') === 'true';
+                    const nextExpanded = !isExpanded;
+                    locationLine.setAttribute('aria-expanded', String(nextExpanded));
+                    locationLine.setAttribute('aria-label', nextExpanded ? 'Hide address' : 'Show address');
+                    addressExpandBtn.innerHTML = nextExpanded
+                        ? '<i class="fa-duotone fa-regular fa-angle-up"></i>'
+                        : '<i class="fa-duotone fa-regular fa-angle-down"></i>';
+                    spAddress.hidden = !nextExpanded;
+                    requestAnimationFrame(updateAddressCopyLayout);
+                };
+
+                locationLine.onclick = toggleAddressExpand;
+                locationLine.onkeydown = (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        toggleAddressExpand();
+                    }
+                };
+            }
+        }
+
+        if (addressText) {
+            addressText.textContent = canShowAddress ? address : '';
+        }
+
+        if (copyAddressBtn) {
+            copyAddressBtn.onclick = () => {
+                if (!canShowAddress) return;
+                const fullAddress = formatFullAddress(props);
+                navigator.clipboard.writeText(fullAddress).then(() => showCopyFeedback(copyAddressBtn));
+            };
+        }
+
         updateSidePanelVisibility();
+        requestAnimationFrame(updateAddressCopyLayout);
         // web pdf link in sidepanel
         const spDesc = document.getElementById('sp-desc');
         if (spDesc) {
@@ -241,7 +360,7 @@ function setupUI() {
                             <button type="button" class="copy-ref-id-btn" aria-label="Copy Reference ID">
                                 <i class="fa-regular fa-copy"></i>
                             </button>
-                            <span class="copy-ref-id-feedback" aria-hidden="true">Copied to clipboard!</span>
+                            <span class="copy-feedback" aria-hidden="true">Copied to clipboard!</span>
                         </span>
                     </div>
                 </div>
@@ -349,7 +468,10 @@ function setupUI() {
         });
     }
 
-    window.addEventListener('resize', updateSidePanelHeaderMargin);
+    window.addEventListener('resize', () => {
+        updateSidePanelHeaderMargin();
+        updateAddressCopyLayout();
+    });
 
     const handleLandmarkClick = (e) => {
         selectLandmark(e.features[0]);
@@ -360,6 +482,28 @@ function setupUI() {
     map.on('click', 'nosymbologylandmark-selected', handleLandmarkClick);
     map.on('click', 'landmarks', handleLandmarkClick);
     map.on('click', 'landmarks-selected', handleLandmarkClick);
+}
+
+function updateAddressCopyLayout() {
+    const addressPanel = document.getElementById('side-panel-address');
+    const row = addressPanel?.querySelector('.address-row');
+    const addressText = row?.querySelector('.address-text');
+    const copyWrap = row?.querySelector('.copy-address-wrap');
+    const feedback = row?.querySelector('.copy-feedback');
+    if (!addressPanel || addressPanel.hidden || !row || !addressText || !copyWrap) return;
+
+    row.classList.remove('copy-below');
+
+    const copyWrapStyle = window.getComputedStyle(copyWrap);
+    const feedbackStyle = feedback ? window.getComputedStyle(feedback) : null;
+    const copyMargin = parseFloat(copyWrapStyle.marginLeft) || 0;
+    const feedbackMargin = feedbackStyle ? parseFloat(feedbackStyle.marginLeft) || 0 : 0;
+    const feedbackWidth = feedback ? feedback.offsetWidth + feedbackMargin : 0;
+    const requiredWidth = addressText.scrollWidth + copyWrap.offsetWidth + copyMargin + feedbackWidth;
+
+    if (requiredWidth > row.clientWidth) {
+        row.classList.add('copy-below');
+    }
 }
 
 function updateSidePanelHeaderMargin() {

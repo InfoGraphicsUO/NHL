@@ -56,7 +56,7 @@
 
 .mode-filter[value="Erasure"],
 .mode-filter[value="None"] {
-    --checkbox-check-color: #333;
+    --checkbox-check-color: #222;
 }
 
 .supremacy-filter::before,
