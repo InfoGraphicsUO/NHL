@@ -12,6 +12,7 @@ function createHoverInfoBox(options = {}) {
     element.hidden = true;
     element.setAttribute('role', 'tooltip');
     container.appendChild(element); // append to body by default
+    let hideTimer;
 
     function appendTextBlock(className, text) {
         if (text === undefined || text === null || text === '') {
@@ -43,6 +44,7 @@ function createHoverInfoBox(options = {}) {
 
     return {
         show({ header, infoText, infoLines } = {}) {
+            clearTimeout(hideTimer);
             element.replaceChildren(); // clear any existing content
             appendTextBlock('hover-info-box__header', header); // add header text
 
@@ -53,10 +55,17 @@ function createHoverInfoBox(options = {}) {
             }
 
             element.hidden = false;
+            requestAnimationFrame(() => element.classList.add('is-visible'));
         },
         hide() {
-            element.hidden = true;
-            element.replaceChildren();
+            clearTimeout(hideTimer);
+            element.classList.remove('is-visible');
+            hideTimer = setTimeout(() => {
+                if (!element.classList.contains('is-visible')) {
+                    element.hidden = true;
+                    element.replaceChildren();
+                }
+            }, 100);
         },
         setPosition
     };

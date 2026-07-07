@@ -12,10 +12,20 @@
     font-family: 'Montserrat', Arial, Helvetica, sans-serif;
     pointer-events: none;
     z-index: 20;
+    opacity: 0;
+    transform: translateY(4px);
+    visibility: hidden;
+    transition: opacity 0.05s ease, transform 0.05s ease, visibility 0.05s ease;
 }
 
 .hover-info-box[hidden] {
     display: none;
+}
+
+.hover-info-box.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
 }
 
 .hover-info-box__header {
@@ -32,4 +42,13 @@
     color: #333;
     font-size: 0.85rem;
     line-height: 1.35;
+}
+
+.hover-info-trigger { /* the (i) icon */
+    display: inline-flex;
+    align-items: center;
+    color: #888;
+    font-size: 0.85em;
+    line-height: 1;
+    cursor: help !important;
 }

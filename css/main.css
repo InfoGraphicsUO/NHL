@@ -16,31 +16,6 @@
     --filter-color-transition-duration: 200ms;
 }
 
-.mode-filter[value="Acknowledged"],
-.mode-pill[data-mode="Acknowledged"] {
-    --mode-symbol-color: var(--mode-acknowledged);
-}
-
-.mode-filter[value="Multiculturalism"],
-.mode-pill[data-mode="Multiculturalism"] {
-    --mode-symbol-color: var(--mode-multiculturalism);
-}
-
-.mode-filter[value="Valorization"],
-.mode-pill[data-mode="Valorization"] {
-    --mode-symbol-color: var(--mode-valorization);
-}
-
-.mode-filter[value="Erasure"],
-.mode-pill[data-mode="Erasure"] {
-    --mode-symbol-color: var(--mode-erasure);
-}
-
-.mode-filter[value="None"],
-.mode-pill[data-mode="None"] {
-    --mode-symbol-color: var(--mode-none);
-}
-
 body, html {
     font-family: 'Montserrat', Arial, Helvetica, sans-serif;
     line-height: 1.25rem;

@@ -84,6 +84,42 @@ function renderModePillsHtml(modes) {
     return `<div class="mode-pill-list">${pills}</div>`;
 }
 
+function renderHoverInfoIconHtml(label) {
+    return `<span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about ${label}" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span>`;
+}
+
+function setupHoverInfoIcons(root = document) {
+    if (typeof createHoverInfoBox !== 'function') return;
+
+    const infoBox = setupHoverInfoIcons._infoBox || createHoverInfoBox({ offsetY: -8 });
+    setupHoverInfoIcons._infoBox = infoBox;
+
+    root.querySelectorAll('.hover-info-trigger').forEach(trigger => {
+        if (trigger._hoverInfoInitialized) return; // only initialize once per trigger
+        trigger._hoverInfoInitialized = true;
+
+        const showInfo = (event) => {
+            infoBox.show({ infoLines: [trigger.dataset.hoverInfo || 'Placeholder text'] }); //display placeholder if no info is provided
+            if (event?.clientX && event?.clientY) {
+                // position the info box relative to the mouse cursor
+                infoBox.setPosition(event.clientX, event.clientY);
+            } else {
+                // position the info box relative to the trigger
+                const rect = trigger.getBoundingClientRect();
+                infoBox.setPosition(rect.left + rect.width / 2, rect.top);
+            }
+        };
+
+        trigger.addEventListener('mouseenter', showInfo);
+        trigger.addEventListener('mousemove', event => {
+            infoBox.setPosition(event.clientX, event.clientY);
+        });
+        trigger.addEventListener('mouseleave', () => infoBox.hide());
+        trigger.addEventListener('focus', showInfo);
+        trigger.addEventListener('blur', () => infoBox.hide());
+    });
+}
+
 function setupUI() {
     const yearSlider = setupYearSliderPanel();
     if (!yearSlider) {
@@ -97,6 +133,7 @@ function setupUI() {
     const sidePanel = document.getElementById('side-panel');
     const spTitle = document.getElementById('side-panel-title');
     const spClose = document.getElementById('side-panel-close');
+    setupHoverInfoIcons(document);
 
     function filterAll() {
         const src = map.getSource('landmark-point-data');
@@ -209,11 +246,11 @@ function setupUI() {
                     </div>
                 </div>
                 <div class="side-panel-field">
-                    <div class="side-panel-label">Nomination Form</div>
+                    <div class="side-panel-label">Nomination Form ${renderHoverInfoIconHtml('Nomination Form')}</div>
                     <div class="side-panel-value">${webPdfLink ? `<a href="${webPdfLink}" target="_blank" rel="noopener" style="color: var(--filter-gold);">View Nomination Form <i style="font-size: 0.75rem; margin-bottom: 0.01rem;" class="fa-solid fa-arrow-up-right-from-square"></i></a>` : 'No Web PDF available.'}</div>
                 </div>
                 <div class="side-panel-field">
-                    <div class="side-panel-label">Year Designated</div>
+                    <div class="side-panel-label">Year Designated ${renderHoverInfoIconHtml('Year Designated')}</div>
                     <div class="side-panel-value">${nhlYear}</div>
                 </div>
                 <div class="side-panel-field">
@@ -221,10 +258,11 @@ function setupUI() {
                     <div class="side-panel-value">${modesHtml}</div>
                 </div>
                 <div class="side-panel-field">
-                    <div class="side-panel-label">Area of Significance</div>
+                    <div class="side-panel-label">Area of Significance ${renderHoverInfoIconHtml('Area of Significance')}</div>
                     <div class="side-panel-value">${areaOfSignificance}</div>
                 </div>
             `;
+            setupHoverInfoIcons(spDesc);
 
             const copyBtn = spDesc.querySelector('.copy-ref-id-btn');
             const refText = spDesc.querySelector('.reference-id-text');
