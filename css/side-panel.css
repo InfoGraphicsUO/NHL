@@ -62,6 +62,27 @@
     display: block;
     font-weight: 400;
 }
+.mode-pill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.1rem;
+}
+.mode-pill {
+    display: inline-block;
+    padding: 0.2rem 0.3rem;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background-color: var(--mode-symbol-color);
+    color: #fff;
+}
+.mode-pill[data-mode="Erasure"] { /* erasure mode grey for contrast */
+    color: #333;
+}
+.mode-pill[data-mode="None"] { /* none mode grey for contrast */
+    color: #333;
+}
 #sp-desc .side-panel-value.reference-id-row {
     display: flex;
     align-items: center;

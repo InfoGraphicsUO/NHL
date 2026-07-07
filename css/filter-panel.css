@@ -36,6 +36,7 @@
 .mode-filter {
     --checkbox-color: var(--modal-filter-gold);
     --checkbox-border-color: var(--checkbox-color);
+    --checkbox-check-color: white;
     width: 1.2em;
     height: 1.2em;
     margin-right: 0.5em;
@@ -46,10 +47,15 @@
     flex-shrink: 0;
     border: 2px solid var(--checkbox-border-color);
     border-radius: 3px;
-    background-color: var(--white);
+    background-color: white;
     cursor: pointer;
     transition: none;
     user-select: none;
+}
+
+.mode-filter[value="Erasure"],
+.mode-filter[value="None"] {
+    --checkbox-check-color: #333;
 }
 
 .supremacy-filter::before,
@@ -57,7 +63,7 @@
     content: "";
     width: 0.55em;
     height: 0.55em;
-    background-color: var(--white);
+    background-color: var(--checkbox-check-color);
     clip-path: polygon(14% 44%, 0 58%, 39% 100%, 100% 18%, 85% 5%, 37% 68%); /* makes checkmark polygon! */
     opacity: 0;
     transform: scale(0.75);
@@ -67,26 +73,6 @@
     transition:
         background-color var(--filter-color-transition-duration) ease,
         border-color var(--filter-color-transition-duration) ease;
-}
-
-.mode-filter[value="Acknowledged"] {
-    --mode-symbol-color: var(--mode-acknowledged);
-}
-
-.mode-filter[value="Multiculturalism"] {
-    --mode-symbol-color: var(--mode-multiculturalism);
-}
-
-.mode-filter[value="Valorization"] {
-    --mode-symbol-color: var(--mode-valorization);
-}
-
-.mode-filter[value="Erasure"] {
-    --mode-symbol-color: var(--mode-erasure);
-}
-
-.mode-filter[value="None"] {
-    --mode-symbol-color: var(--mode-none);
 }
 
 .filter-section {

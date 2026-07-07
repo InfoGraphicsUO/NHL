@@ -224,8 +224,11 @@ function togglemodeSymbology(animateColors = false) {
 
     document.querySelectorAll('.mode-filter').forEach(checkbox => {
         const checkboxColor = isEnabled ? 'var(--mode-symbol-color)' : 'var(--modal-filter-gold)';
+        const isLowContrastMode = checkbox.value === 'Erasure' || checkbox.value === 'None';
+        const checkboxCheckColor = isEnabled && isLowContrastMode ? '#333' : 'white';
         checkbox.style.setProperty('--checkbox-color', checkboxColor);
         checkbox.style.setProperty('--checkbox-border-color', checkboxColor);
+        checkbox.style.setProperty('--checkbox-check-color', checkboxCheckColor);
     });
 
     if (!map) {

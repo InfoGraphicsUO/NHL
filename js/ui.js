@@ -55,6 +55,35 @@ function isValidWebPdfUrl(value) {
     }
 }
 
+function getActiveModesFromProps(props) {
+    const modeFilters = Array.from(document.querySelectorAll('.mode-filter'));
+    const activeModes = modeFilters 
+        .filter(({ value }) => value !== 'None' && props[value] === '1')
+        .map(checkbox => ({
+            key: checkbox.value,
+            label: checkbox.closest('label')?.textContent.trim() || checkbox.value
+        }));
+
+    if (activeModes.length) {
+        return activeModes;
+    }
+
+    const noneFilter = modeFilters.find(({ value }) => value === 'None');
+    return [{
+        key: 'None',
+        label: noneFilter?.closest('label')?.textContent.trim() || 'None'
+    }];
+}
+
+function renderModePillsHtml(modes) {
+    // renders the 'pills' for modes of representation in the side panel
+    const pills = modes.map(({ key, label }) =>
+        `<span class="mode-pill" data-mode="${key}">${label}</span>`
+    ).join('');
+
+    return `<div class="mode-pill-list">${pills}</div>`;
+}
+
 function setupUI() {
     const yearSlider = setupYearSliderPanel();
     if (!yearSlider) {
@@ -162,12 +191,7 @@ function setupUI() {
             const webPdfUrl = props['Web PDF'];
             const webPdfLink = isValidWebPdfUrl(webPdfUrl) ? webPdfUrl.trim() : '';
             const nhlYear = props.NHL_Year || 'Unknown';
-            const modesText = [
-                props.Acknowledged === '1' ? 'Acknowledged' : '',
-                props.Multiculturalism === '1' ? 'Multiculturalism' : '',
-                props.Valorization === '1' ? 'Valorization' : '',
-                props.Erasure === '1' ? 'Erasure' : ''
-            ].filter(Boolean).join(', ') || 'None';
+            const modesHtml = renderModePillsHtml(getActiveModesFromProps(props));
             const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
 
             // create the side panel description
@@ -194,7 +218,7 @@ function setupUI() {
                 </div>
                 <div class="side-panel-field">
                     <div class="side-panel-label">Modes of Representation</div>
-                    <div class="side-panel-value">${modesText}</div>
+                    <div class="side-panel-value">${modesHtml}</div>
                 </div>
                 <div class="side-panel-field">
                     <div class="side-panel-label">Area of Significance</div>
