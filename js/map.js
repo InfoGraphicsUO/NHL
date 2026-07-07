@@ -55,7 +55,8 @@ function mapInits() {
         style: 'mapbox://styles/infographics/cmlhb3rze006q01sn2k2k5qki', // frank!!!!
         container: 'map',
         center: NHL_MAP_HOME.center,
-        zoom: NHL_MAP_HOME.zoom
+        zoom: NHL_MAP_HOME.zoom,
+        attributionControl: false,
     });
 
     // global map instance
@@ -65,4 +66,7 @@ function mapInits() {
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.addControl(new HomeControl(), 'top-left');
+    map.addControl(new mapboxgl.AttributionControl({
+        customAttribution: '<a href="https://infographics.uoregon.edu">UO InfoGraphics Lab</a>'
+    }));
 }
