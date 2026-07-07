@@ -14,8 +14,8 @@
 
 .dev-zoom-display {
     position: absolute;
-    top: 27.5rem;
-    left: 17.25rem;
+    top: 26.75rem;
+    left: 17rem;
     z-index: 1000;
     font-size: 0.75rem;
     color: black;

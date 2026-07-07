@@ -51,6 +51,7 @@
     cursor: pointer;
     transition: none;
     user-select: none;
+    margin-top: 0.18rem;
 }
 
 .mode-filter[value="Erasure"],
@@ -114,7 +115,7 @@
     user-select: none;
 }
 
-/* mode symbology switch */
+/* mode symbology switch ("Color by category") */
 .mode-symbology-switch {
     display: flex;
     padding: 3px 5px;
@@ -137,7 +138,7 @@
     margin: 0;
     cursor: pointer;
     flex-shrink: 0;
-    height: 22px;
+    height: 18px;
     /* box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.15); */
 }
 
