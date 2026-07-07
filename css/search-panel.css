@@ -41,15 +41,16 @@
 #monument-search {
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid var(--slider-track);
+    border: 0;
+    border-bottom: 1px solid var(--slider-track);
     color: inherit;
     font: inherit;
     padding: 0.45rem 2rem 0.45rem 0.6rem;
 }
 
 #monument-search:focus {
-    border-color: var(--filter-gold);
-    box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--filter-gold) 25%, transparent);
+    border-color: transparent;
+    border-bottom-color: var(--filter-gold);
     outline: none;
 }
 

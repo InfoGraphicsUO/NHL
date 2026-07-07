@@ -497,11 +497,6 @@ function addMapLayers(map) {
     // track the current selected feature/site
     map._selectedFeatureId = null;
 
-    const popup = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: false
-    });
-
     const landmarkLayers = [
         'backgroundlandmark',
         'backgroundlandmark-selected',
@@ -511,33 +506,105 @@ function addMapLayers(map) {
         'landmarks-selected'
     ];
 
-    const showLandmarkPopup = (e) => {
-        map.getCanvas().style.cursor = 'pointer';
+    const hoverInfoBox = createHoverInfoBox({ offsetY: -12 });
+    let hoverMoveListenerActive = false;
+    let activeHoverFeatureId = null;
 
-        const coordinates = e.feature.geometry.coordinates.slice();
-        const props = e.feature.properties;
-        const name = props.Historic_Name;
-        const formYear = props["Form Year"] || 'Unknown';
-        const html = `<div style="min-width:180px"><strong>${name}</strong><br><span>Form year: ${formYear}</span></div>`;
-        popup.setLngLat(coordinates).setHTML(html).addTo(map);
+    const getEventFeature = (e) => e.feature || e.features?.[0] || null;
+
+    const getPointerPosition = (e) => {
+        if (e.originalEvent) {
+            return {
+                clientX: e.originalEvent.clientX,
+                clientY: e.originalEvent.clientY
+            };
+        }
+
+        const point = e.point;
+        const mapBounds = map.getContainer().getBoundingClientRect();
+        return {
+            clientX: mapBounds.left + point.x,
+            clientY: mapBounds.top + point.y
+        };
     };
 
-    const hideLandmarkPopup = () => {
+    const updateLandmarkHoverContent = (feature) => {
+        if (!feature || feature.id === activeHoverFeatureId) {
+            return;
+        }
+
+        const props = feature.properties || {};
+        hoverInfoBox.show({
+            header: props.Historic_Name,
+            infoText: "Form year: " + (props["Form Year"] || 'Unknown')
+        });
+        activeHoverFeatureId = feature.id;
+    };
+
+    const renderedLandmarkFeatureAtPoint = (point) => {
+        if (!point) {
+            return null;
+        }
+
+        const features = map.queryRenderedFeatures(point, { layers: landmarkLayers });
+        return features[0] || null;
+    };
+
+    const onHoverMove = (e) => {
+        const position = getPointerPosition(e);
+        hoverInfoBox.setPosition(position.clientX, position.clientY);
+        updateLandmarkHoverContent(renderedLandmarkFeatureAtPoint(e.point));
+    };
+
+    const startHoverMoveListener = () => {
+        if (hoverMoveListenerActive) {
+            return;
+        }
+
+        map.on('mousemove', onHoverMove);
+        hoverMoveListenerActive = true;
+    };
+
+    const stopHoverMoveListener = () => {
+        if (!hoverMoveListenerActive) {
+            return;
+        }
+
+        map.off('mousemove', onHoverMove);
+        hoverMoveListenerActive = false;
+    };
+
+    const showLandmarkHover = (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        updateLandmarkHoverContent(getEventFeature(e));
+
+        const position = getPointerPosition(e);
+        hoverInfoBox.setPosition(position.clientX, position.clientY);
+        startHoverMoveListener();
+    };
+
+    const hideLandmarkHover = (e) => {
+        if (renderedLandmarkFeatureAtPoint(e.point)) {
+            return;
+        }
+
         map.getCanvas().style.cursor = '';
-        popup.remove();
+        hoverInfoBox.hide();
+        activeHoverFeatureId = null;
+        stopHoverMoveListener();
     };
 
     landmarkLayers.forEach(layerId => {
         map.addInteraction(`places-mouseenter-${layerId}`, {
             type: 'mouseenter',
             target: { layerId },
-            handler: showLandmarkPopup
+            handler: showLandmarkHover
         });
 
         map.addInteraction(`places-mouseleave-${layerId}`, {
             type: 'mouseleave',
             target: { layerId },
-            handler: hideLandmarkPopup
+            handler: hideLandmarkHover
         });
     });
 

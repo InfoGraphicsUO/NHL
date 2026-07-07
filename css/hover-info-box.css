@@ -1,0 +1,35 @@
+.hover-info-box {
+    position: fixed;
+    left: 0;
+    top: 0;
+    max-width: 280px;
+    min-width: 180px;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: #111;
+    font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.hover-info-box[hidden] {
+    display: none;
+}
+
+.hover-info-box__header {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.hover-info-box__header + .hover-info-box__info {
+    margin-top: 0.25rem;
+}
+
+.hover-info-box__info {
+    color: #333;
+    font-size: 0.85rem;
+    line-height: 1.35;
+}
