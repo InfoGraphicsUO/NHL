@@ -27,6 +27,14 @@ const NOSYMBOLOGY_LAYERS = [
 ];
 
 const SYMBOLOGY_LAYERS = ['landmarks-shadow', 'landmarks-outline', 'landmarks-halo', 'landmarks', 'landmarks-selected'];
+const LANDMARK_HOVER_LAYERS = [
+    'backgroundlandmark',
+    'backgroundlandmark-selected',
+    'nosymbologylandmark',
+    'nosymbologylandmark-selected',
+    'landmarks',
+    'landmarks-selected'
+];
 
 // maps the modes of representation to the corresponding icon
 const LANDMARK_ICON_IMAGE = [
@@ -274,6 +282,164 @@ function addMapIcon(map, id, url) {
     image.src = url;
 }
 
+function setupLandmarkHover(map, landmarkLayers) {
+    // this func sets up the landmark hover functionality that ensures
+    // only one landmark is hovered at a time and that the hover info box is displayed correctly
+    const hoverInfoBox = createHoverInfoBox({ offsetY: -12 });
+    const mapCanvas = map.getCanvas();
+    let hoverMoveListenerActive = false;
+    let hoverBoundaryListenerActive = false;
+    let activeHoverFeatureId = null;
+
+    const getEventFeature = (e) => e.feature || e.features?.[0] || null;
+
+    const getPointerPosition = (e) => {
+        if (e.originalEvent) {
+            return {
+                clientX: e.originalEvent.clientX,
+                clientY: e.originalEvent.clientY
+            };
+        }
+
+        const point = e.point;
+        const mapBounds = map.getContainer().getBoundingClientRect();
+        return {
+            clientX: mapBounds.left + point.x,
+            clientY: mapBounds.top + point.y
+        };
+    };
+
+    const updateLandmarkHoverContent = (feature) => {
+        if (!feature || feature.id === activeHoverFeatureId) {
+            //if the feature is the same as the active hover feature, do nothing
+            return;
+        }
+
+        const props = feature.properties || {};
+        // display the hover info box with the feature's properties
+        hoverInfoBox.show({
+            header: props.Historic_Name,
+            infoText: "Form year: " + (props["Form Year"] || 'Unknown')
+        });
+        activeHoverFeatureId = feature.id;
+    };
+
+    const renderedLandmarkFeatureAtPoint = (point) => {
+        // get the feature at the given point
+        if (!point) {
+            return null;
+        }
+
+        const features = map.queryRenderedFeatures(point, { layers: landmarkLayers });
+        return features[0] || null;
+    };
+
+    const onHoverMove = (e) => {
+        // get the position of the pointer
+        const position = getPointerPosition(e);
+        // set the position of the hover info box
+        hoverInfoBox.setPosition(position.clientX, position.clientY);
+        // update the hover content with the feature at the given point
+        updateLandmarkHoverContent(renderedLandmarkFeatureAtPoint(e.point));
+    };
+
+    const startHoverMoveListener = () => {
+        // if the hover move listener is already active, do nothing
+        if (hoverMoveListenerActive) {
+            return;
+        }
+
+        // add the mousemove listener to the map
+        map.on('mousemove', onHoverMove);
+        hoverMoveListenerActive = true;
+    };
+
+    const stopHoverMoveListener = () => {
+        // if the hover move listener is not active, do nothing
+        if (!hoverMoveListenerActive) {
+            return;
+        }
+
+        // remove the mousemove listener from the map
+        map.off('mousemove', onHoverMove);
+        hoverMoveListenerActive = false;
+    };
+
+    const clearLandmarkHover = () => {
+        mapCanvas.style.cursor = '';
+        // hide the hover info box
+        hoverInfoBox.hide();
+        // reset the active hover feature id
+        activeHoverFeatureId = null;
+        stopHoverMoveListener();
+        stopHoverBoundaryListener();
+    };
+
+    const onDocumentPointerMove = (e) => {
+        if (e.target !== mapCanvas) {
+            // if the pointer is not over the map canvas, clear the landmark hover
+            clearLandmarkHover();
+        }
+    };
+
+    function startHoverBoundaryListener() {
+        // if the hover boundary listener is already active, do nothing
+        if (hoverBoundaryListenerActive) {
+            return;
+        }
+
+        // add the pointermove listener to the document
+        document.addEventListener('pointermove', onDocumentPointerMove, true);
+        hoverBoundaryListenerActive = true;
+    }
+
+    function stopHoverBoundaryListener() {
+        // if the hover boundary listener is not active, do nothing
+        if (!hoverBoundaryListenerActive) {
+            return;
+        }
+
+        // remove the pointermove listener from the document
+        document.removeEventListener('pointermove', onDocumentPointerMove, true);
+        hoverBoundaryListenerActive = false;
+    }
+
+    const showLandmarkHover = (e) => {
+        mapCanvas.style.cursor = 'pointer';
+        // update the hover content with the feature at the given point
+        updateLandmarkHoverContent(getEventFeature(e));
+
+        const position = getPointerPosition(e);
+        hoverInfoBox.setPosition(position.clientX, position.clientY);
+        startHoverMoveListener();
+        startHoverBoundaryListener();
+    };
+
+    const hideLandmarkHover = (e) => {
+        if (e?.point && renderedLandmarkFeatureAtPoint(e.point)) {
+            return;
+        }
+
+        clearLandmarkHover();
+    };
+
+    landmarkLayers.forEach(layerId => {
+        // add the mouseenter interaction to the map
+        map.addInteraction(`places-mouseenter-${layerId}`, {
+            type: 'mouseenter',
+            target: { layerId },
+            handler: showLandmarkHover
+        });
+
+        // add the mouseleave interaction to the map
+        map.addInteraction(`places-mouseleave-${layerId}`, {
+            type: 'mouseleave',
+            target: { layerId },
+            handler: hideLandmarkHover
+        });
+    });
+}
+
 function addMapLayers(map) {
     map.on('load', async () => {
         filterBasemapLabelsToUS(map);
@@ -500,115 +666,6 @@ function addMapLayers(map) {
     // track the current selected feature/site
     map._selectedFeatureId = null;
 
-    const landmarkLayers = [
-        'backgroundlandmark',
-        'backgroundlandmark-selected',
-        'nosymbologylandmark',
-        'nosymbologylandmark-selected',
-        'landmarks',
-        'landmarks-selected'
-    ];
-
-    const hoverInfoBox = createHoverInfoBox({ offsetY: -12 });
-    let hoverMoveListenerActive = false;
-    let activeHoverFeatureId = null;
-
-    const getEventFeature = (e) => e.feature || e.features?.[0] || null;
-
-    const getPointerPosition = (e) => {
-        if (e.originalEvent) {
-            return {
-                clientX: e.originalEvent.clientX,
-                clientY: e.originalEvent.clientY
-            };
-        }
-
-        const point = e.point;
-        const mapBounds = map.getContainer().getBoundingClientRect();
-        return {
-            clientX: mapBounds.left + point.x,
-            clientY: mapBounds.top + point.y
-        };
-    };
-
-    const updateLandmarkHoverContent = (feature) => {
-        if (!feature || feature.id === activeHoverFeatureId) {
-            return;
-        }
-
-        const props = feature.properties || {};
-        hoverInfoBox.show({
-            header: props.Historic_Name,
-            infoText: "Form year: " + (props["Form Year"] || 'Unknown')
-        });
-        activeHoverFeatureId = feature.id;
-    };
-
-    const renderedLandmarkFeatureAtPoint = (point) => {
-        if (!point) {
-            return null;
-        }
-
-        const features = map.queryRenderedFeatures(point, { layers: landmarkLayers });
-        return features[0] || null;
-    };
-
-    const onHoverMove = (e) => {
-        const position = getPointerPosition(e);
-        hoverInfoBox.setPosition(position.clientX, position.clientY);
-        updateLandmarkHoverContent(renderedLandmarkFeatureAtPoint(e.point));
-    };
-
-    const startHoverMoveListener = () => {
-        if (hoverMoveListenerActive) {
-            return;
-        }
-
-        map.on('mousemove', onHoverMove);
-        hoverMoveListenerActive = true;
-    };
-
-    const stopHoverMoveListener = () => {
-        if (!hoverMoveListenerActive) {
-            return;
-        }
-
-        map.off('mousemove', onHoverMove);
-        hoverMoveListenerActive = false;
-    };
-
-    const showLandmarkHover = (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        updateLandmarkHoverContent(getEventFeature(e));
-
-        const position = getPointerPosition(e);
-        hoverInfoBox.setPosition(position.clientX, position.clientY);
-        startHoverMoveListener();
-    };
-
-    const hideLandmarkHover = (e) => {
-        if (renderedLandmarkFeatureAtPoint(e.point)) {
-            return;
-        }
-
-        map.getCanvas().style.cursor = '';
-        hoverInfoBox.hide();
-        activeHoverFeatureId = null;
-        stopHoverMoveListener();
-    };
-
-    landmarkLayers.forEach(layerId => {
-        map.addInteraction(`places-mouseenter-${layerId}`, {
-            type: 'mouseenter',
-            target: { layerId },
-            handler: showLandmarkHover
-        });
-
-        map.addInteraction(`places-mouseleave-${layerId}`, {
-            type: 'mouseleave',
-            target: { layerId },
-            handler: hideLandmarkHover
-        });
-    });
+    setupLandmarkHover(map, LANDMARK_HOVER_LAYERS);
 
 }
