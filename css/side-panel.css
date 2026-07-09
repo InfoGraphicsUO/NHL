@@ -21,10 +21,6 @@
     align-items: flex-start;
     font-size: 1.25rem;
 }
-.side-panel-header.multiline {
-    /* only titles that wrap */
-    /* margin-bottom: 10px; */
-}
 .side-panel-header-text {
     flex: 1;
     min-width: 0;

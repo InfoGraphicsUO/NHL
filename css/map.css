@@ -2,6 +2,25 @@
     position: absolute; top: 0; bottom: 0; width: 100%; 
 }
 
+.mapboxgl-ctrl-group {
+    border: none;
+    border-radius: 0;
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.mapboxgl-ctrl-group:not(:empty) {
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3);
+}
+
+.mapboxgl-ctrl-group button {
+    border-radius: 0;
+}
+
+.mapboxgl-ctrl-group button + button {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 .mapboxgl-ctrl-home button {
     font-size: 1.1rem;
     line-height: 1;
