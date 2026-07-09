@@ -110,9 +110,17 @@
     
         <div id="map"></div>
 
-        <!-- Time Slider for Form Year -->
+        <!-- Time Slider for Form Year / Year Designated -->
         <div id="slider-panel">
-            <label for="year-slider">Form Year:</label>
+            <div class="year-field-picker">
+                <label class="year-field-picker-label" for="year-field-picker">
+                    <select id="year-field-picker" aria-label="Year field">
+                        <option value="formYear">Form Year</option>
+                        <option value="nhlYear">Year Designated</option>
+                    </select>
+                    <i class="fa-light fa-angles-up-down year-field-picker-icon" aria-hidden="true"></i>
+                </label>
+            </div>
             <div id="year-slider"></div>
             <button id="year-reset" type="button">Reset</button>
         </div>

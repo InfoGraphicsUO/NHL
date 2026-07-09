@@ -1,9 +1,46 @@
-const YEAR_SLIDER_MIN = 1950;
-const YEAR_SLIDER_MAX = 2026;
+const YEAR_SLIDER_MAX = 2026; // this is the same for each year field for consistency
+// as of 2026
+// form year actual range: 1957 - 2012 
+// year designated actual range: 1937 - 2024
+
+const YEAR_FIELD_OPTIONS = {
+    formYear: {
+        key: 'formYear',
+        label: 'Form Year',
+        property: 'Form Year',
+        min: 1950,
+        max: YEAR_SLIDER_MAX,
+        excludeMultiple: true,
+        ariaName: 'form year'
+    },
+    nhlYear: {
+        key: 'nhlYear',
+        label: 'Year Designated',
+        property: 'NHL_Year',
+        min: 1937,
+        max: YEAR_SLIDER_MAX,
+        excludeMultiple: false,
+        ariaName: 'year designated'
+    }
+};
+
+const YEAR_SLIDER_MIN = YEAR_FIELD_OPTIONS.formYear.min; 
+
+let currentYearFieldKey = YEAR_FIELD_OPTIONS.formYear.key;
+
+function getYearFieldOption(key = currentYearFieldKey) {
+    return YEAR_FIELD_OPTIONS[key] || YEAR_FIELD_OPTIONS.formYear;
+}
+
+function getCurrentYearField() {
+    return getYearFieldOption();
+}
 
 function setupYearSliderPanel() {
     const yearSlider = document.getElementById('year-slider');
     const yearReset = document.getElementById('year-reset');
+    const yearFieldPicker = document.getElementById('year-field-picker');
+    const initialField = getCurrentYearField();
 
     if (!yearSlider) {
         console.warn('Year slider element not found');
@@ -12,11 +49,11 @@ function setupYearSliderPanel() {
 
     noUiSlider.create(yearSlider, {
         // initialize slider using noUiSlider
-        start: [YEAR_SLIDER_MIN, YEAR_SLIDER_MAX],
+        start: [initialField.min, initialField.max],
         step: 1,
         range: {
-            min: YEAR_SLIDER_MIN,
-            max: YEAR_SLIDER_MAX
+            min: initialField.min,
+            max: initialField.max
         },
         connect: true,
         tooltips: false,
@@ -43,14 +80,26 @@ function setupYearSliderPanel() {
         });
     }
 
+    function updateYearTooltipAriaLabels() {
+        const field = getCurrentYearField();
+        yearTooltipInputs.forEach((input, index) => {
+            if (!input) return;
+            input.setAttribute(
+                'aria-label',
+                index === 0 ? `Minimum ${field.ariaName}` : `Maximum ${field.ariaName}`
+            );
+        });
+    }
+
     function parseValidYear(value) {
         const trimmedValue = value.trim();
         if (!/^\d+$/.test(trimmedValue)) {
             return null;
         }
 
+        const field = getCurrentYearField();
         const year = Number(trimmedValue);
-        if (!Number.isInteger(year) || year < YEAR_SLIDER_MIN || year > YEAR_SLIDER_MAX) {
+        if (!Number.isInteger(year) || year < field.min || year > field.max) {
             return null;
         }
 
@@ -97,7 +146,6 @@ function setupYearSliderPanel() {
             input.className = 'year-tooltip-input';
             input.type = 'text';
             input.inputMode = 'numeric';
-            input.setAttribute('aria-label', index === 0 ? 'Minimum form year' : 'Maximum form year');
 
             ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(eventName => {
                 input.addEventListener(eventName, event => event.stopPropagation());
@@ -121,15 +169,85 @@ function setupYearSliderPanel() {
             yearTooltipInputs[index] = input;
         });
 
+        updateYearTooltipAriaLabels();
         syncYearTooltipInputs();
+    }
+
+    function syncYearFieldPickerWidth() {
+        // helps ensure the year field picker is the correct width
+        if (!yearFieldPicker) return;
+
+        const selectedOption = yearFieldPicker.options[yearFieldPicker.selectedIndex];
+        if (!selectedOption) return;
+
+        const measure = document.createElement('span');
+        const styles = getComputedStyle(yearFieldPicker);
+
+        measure.textContent = selectedOption.text;
+        measure.style.cssText = [
+            'position:absolute',
+            'visibility:hidden',
+            'white-space:nowrap',
+            `font:${styles.font}`,
+            `letter-spacing:${styles.letterSpacing}`,
+            `text-transform:${styles.textTransform}`
+        ].join(';');
+
+        document.body.appendChild(measure);
+        // size select to the selected label text only; icon sits beside it
+        yearFieldPicker.style.width = `${Math.ceil(measure.getBoundingClientRect().width) + 4}px`;
+        measure.remove();
+    }
+
+    function clampYearToFieldRange(year, field) {
+        return Math.min(field.max, Math.max(field.min, year));
+    }
+
+    function applyYearField(fieldKey) {
+        // applies the year field to the slider
+        const field = getYearFieldOption(fieldKey);
+        const [currentMinYear, currentMaxYear] = getCurrentSliderYears();
+        currentYearFieldKey = field.key;
+
+        if (yearFieldPicker && yearFieldPicker.value !== field.key) {
+            yearFieldPicker.value = field.key;
+        }
+
+        syncYearFieldPickerWidth();
+        updateYearTooltipAriaLabels();
+
+        // preserve the user's range when switching fields; clamp only if out of range
+        let nextMinYear = clampYearToFieldRange(currentMinYear, field);
+        let nextMaxYear = clampYearToFieldRange(currentMaxYear, field);
+        if (nextMinYear > nextMaxYear) {
+            nextMaxYear = nextMinYear;
+        }
+
+        yearSlider.noUiSlider.updateOptions({
+            range: {
+                min: field.min,
+                max: field.max
+            },
+            start: [nextMinYear, nextMaxYear]
+        });
     }
 
     setupYearTooltipInputs();
     yearSlider.noUiSlider.on('update', syncYearTooltipInputs);
 
+    if (yearFieldPicker) {
+        // initialize the year field picker with the initial field
+        yearFieldPicker.value = initialField.key;
+        syncYearFieldPickerWidth(); // ensure the year field picker is the correct width
+        yearFieldPicker.addEventListener('change', () => {
+            applyYearField(yearFieldPicker.value); // apply the year field to the slider
+        });
+    }
+
     if (yearReset) {
         yearReset.addEventListener('click', function() {
-            yearSlider.noUiSlider.set([YEAR_SLIDER_MIN, YEAR_SLIDER_MAX]);
+            const field = getCurrentYearField();
+            yearSlider.noUiSlider.set([field.min, field.max]);
         });
     }
 
@@ -138,6 +256,13 @@ function setupYearSliderPanel() {
 
 function getYearSliderRange(yearSlider) {
     return yearSlider.noUiSlider.get().map(value => parseInt(value, 10));
+}
+
+function isFullYearSliderRange(yearSlider) {
+    // checks if the slider is at the full range of the current year field
+    const field = getCurrentYearField();
+    const [minYear, maxYear] = getYearSliderRange(yearSlider);
+    return minYear === field.min && maxYear === field.max;
 }
 
 function onYearSliderUpdate(yearSlider, callback) {

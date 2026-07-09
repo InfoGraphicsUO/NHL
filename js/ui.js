@@ -175,20 +175,23 @@ function setupUI() {
 
         // get current filter values
         const [minYear, maxYear] = getYearSliderRange(yearSlider);
+        const yearField = getCurrentYearField();
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
-        const isFullYearRange = minYear === YEAR_SLIDER_MIN && maxYear === YEAR_SLIDER_MAX;
+        const isFullYearRange = isFullYearSliderRange(yearSlider);
         // "None" selection
         const isNoneSelected = modes.includes("None");
         const isFOWSNoneSelected = supremacy.includes("None");
         let filterExpr = ["all"];
         if (!isFullYearRange) {
-            filterExpr.push(["!=", ["get", "Form Year"], "Multiple"]);
+            if (yearField.excludeMultiple) {
+                filterExpr.push(["!=", ["get", yearField.property], "Multiple"]);
+            }
             // year filter
             filterExpr.push([
                 "all",
-                [">=", ["to-number", ["get", "Form Year"]], minYear],
-                ["<=", ["to-number", ["get", "Form Year"]], maxYear]
+                [">=", ["to-number", ["get", yearField.property]], minYear],
+                ["<=", ["to-number", ["get", yearField.property]], maxYear]
             ]);
         }
 
