@@ -189,7 +189,6 @@ function setupUI() {
     // map instance and ui elements
     const map = window._nhlMapInstance;
     const filterToggle = document.getElementById('filter-toggle');
-    const filterContent = document.getElementById('filter-content');
     const sidePanel = document.getElementById('side-panel');
     const spTitle = document.getElementById('side-panel-title');
     const spLocation = document.getElementById('side-panel-location');
@@ -482,50 +481,74 @@ function setupUI() {
         });
     }
 
-    //sidebar and filter toggle
-    if (filterToggle && filterContent) {
-        const filterPanel = document.getElementById('filter-panel');
-        let filterAnimating = false;
+    // filter section collapse toggles
+    const filterSections = [];
 
-        const setFilterExpanded = (expanded) => {
-            if (!filterPanel || filterAnimating) return;
-            filterAnimating = true;
+    const syncFilterToggle = () => {
+        // syncs both individual section toggles + the main large toggle
+        if (!filterToggle) return;
+        const allCollapsed = filterSections.length > 0 && filterSections.every(({ section }) => section.classList.contains('is-collapsed'));
+        const expanded = !allCollapsed;
+        filterToggle.setAttribute('aria-expanded', String(expanded));
+        filterToggle.setAttribute('aria-label', expanded ? 'Collapse filters' : 'Expand filters');
+        filterToggle.innerHTML = expanded
+            ? '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>'
+            : '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>';
+    };
+
+    document.querySelectorAll('.filter-section').forEach(section => {
+        // for each filter section, add a toggle to collapse/expand the section
+        const sectionToggle = section.querySelector('.filter-section-toggle');
+        const sectionOptions = section.querySelector('.filter-section-options');
+        if (!sectionToggle || !sectionOptions) return;
+
+        let sectionAnimating = false; // prevents multiple animations from happening at once
+        const sectionLabel = sectionToggle.getAttribute('aria-label')?.replace(/^Collapse\s+|^Expand\s+/, '') || 'section';
+
+        const setSectionExpanded = (expanded) => {
+            if (sectionAnimating || section.classList.contains('is-collapsed') === !expanded) {
+                if (!sectionAnimating) syncFilterToggle();
+                return;
+            }
+            sectionAnimating = true;
             const transitionMs = getCssDurationMs('--filter-collapse-duration', 200);
             let completionTimer;
 
             const onTransitionEnd = (event) => {
-                if (event.target !== filterContent || event.propertyName !== 'height') return;
+                if (event.target !== sectionOptions || event.propertyName !== 'height') return;
                 finish();
             };
 
             const finish = () => {
                 window.clearTimeout(completionTimer);
-                filterContent.removeEventListener('transitionend', onTransitionEnd);
+                sectionOptions.removeEventListener('transitionend', onTransitionEnd);
                 if (expanded) {
-                    filterContent.style.height = 'auto';
+                    sectionOptions.style.height = 'auto';
                 }
-                filterAnimating = false;
+                sectionAnimating = false;
             };
 
-            filterContent.addEventListener('transitionend', onTransitionEnd);
-            filterToggle.setAttribute('aria-expanded', String(expanded));
-            filterToggle.setAttribute('aria-label', expanded ? 'Collapse filters' : 'Expand filters');
+            sectionOptions.addEventListener('transitionend', onTransitionEnd);
+            sectionToggle.setAttribute('aria-expanded', String(expanded));
+            sectionToggle.setAttribute('aria-label', `${expanded ? 'Collapse' : 'Expand'} ${sectionLabel}`);
 
             if (expanded) {
-                filterPanel.classList.remove('is-collapsed');
-                filterContent.style.height = '0px';
-                // force reflow so the open transition starts from 0
-                filterContent.offsetHeight;
-                filterContent.style.height = `${filterContent.scrollHeight}px`;
-                filterToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>';
+                // if expanded, remove the collapsed class and set the height to the scroll height
+                section.classList.remove('is-collapsed');
+                sectionOptions.style.height = '0px';
+                sectionOptions.offsetHeight;
+                sectionOptions.style.height = `${sectionOptions.scrollHeight}px`;
+                sectionToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>';
             } else {
-                filterContent.style.height = `${filterContent.scrollHeight}px`;
-                // force reflow so the close transition starts from full height
-                filterContent.offsetHeight;
-                filterPanel.classList.add('is-collapsed');
-                filterContent.style.height = '0px';
-                filterToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>';
+                // if collapsed, set the height to the scroll height and then set it to 0
+                sectionOptions.style.height = `${sectionOptions.scrollHeight}px`;
+                sectionOptions.offsetHeight;
+                section.classList.add('is-collapsed'); 
+                sectionOptions.style.height = '0px'; 
+                sectionToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>'; // update the toggle icon
             }
+
+            syncFilterToggle(); // sync the main large toggle
 
             if (transitionMs === 0) {
                 finish();
@@ -534,9 +557,17 @@ function setupUI() {
             }
         };
 
-        filterToggle.addEventListener('click', function() {
-            const isCollapsed = filterPanel.classList.contains('is-collapsed');
-            setFilterExpanded(isCollapsed);
+        filterSections.push({ section, setSectionExpanded });
+
+        sectionToggle.addEventListener('click', () => {
+            setSectionExpanded(section.classList.contains('is-collapsed'));
+        });
+    });
+
+    if (filterToggle) {
+        filterToggle.addEventListener('click', () => {
+            const allCollapsed = filterSections.every(({ section }) => section.classList.contains('is-collapsed'));
+            filterSections.forEach(({ setSectionExpanded }) => setSectionExpanded(allCollapsed));
         });
     }
 

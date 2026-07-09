@@ -34,12 +34,14 @@
         <!-- Combined Filters for Forms of White Supremacy and Modes of Representation -->
         <div id="sidebar-container">
             <div id="filter-panel">
-                <span id="filter-collapsed-label">Filters</span>
-                <button id="filter-toggle" type="button" aria-controls="filter-content" aria-expanded="true" aria-label="Collapse filters"><i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i></button>
+                <button id="filter-toggle" type="button" aria-controls="mode-filter-options supremacy-filter-options" aria-expanded="true" aria-label="Collapse filters"><i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i></button>
                 <div id="filter-content">
-                    <section class="filter-section">
-                        <strong>Modes of Representation <span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about Modes of Representation" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span></strong>
-                        <div class="filter-section-options">
+                    <section class="filter-section" data-filter-section="modes">
+                        <div class="filter-section-header">
+                            <button class="filter-section-toggle" type="button" aria-controls="mode-filter-options" aria-expanded="true" aria-label="Collapse Modes of Representation"><i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i></button>
+                            <strong>Modes of Representation <span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about Modes of Representation" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span></strong>
+                        </div>
+                        <div class="filter-section-options" id="mode-filter-options">
                             <label><input type="checkbox" class="mode-filter" value="Acknowledged" checked> Acknowledged</label>
                             <label><input type="checkbox" class="mode-filter" value="Multiculturalism" checked> Multiculturalism</label>
                             <label><input type="checkbox" class="mode-filter" value="Valorization" checked> Valorization</label>
@@ -54,9 +56,12 @@
                         </div>
                     </section>
                     <hr style="margin: 0.5rem 0;">
-                    <section class="filter-section">
-                        <strong>Forms of White Supremacy <span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about Forms of White Supremacy" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span></strong>
-                        <div class="filter-section-options">
+                    <section class="filter-section" data-filter-section="supremacy">
+                        <div class="filter-section-header">
+                            <button class="filter-section-toggle" type="button" aria-controls="supremacy-filter-options" aria-expanded="true" aria-label="Collapse Forms of White Supremacy"><i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i></button>
+                            <strong>Forms of White Supremacy <span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about Forms of White Supremacy" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span></strong>
+                        </div>
+                        <div class="filter-section-options" id="supremacy-filter-options">
                             <label><input type="checkbox" class="supremacy-filter" value="Colonization" checked> Colonization</label>
                             <label><input type="checkbox" class="supremacy-filter" value="Nation_Building" checked> Nation Building</label>
                             <label><input type="checkbox" class="supremacy-filter" value="Settler_Colonization" checked> Settler Colonization</label>
