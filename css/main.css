@@ -14,6 +14,16 @@
     --slider-handle-hover: #ebebeb;
     --switch-off: rgb(192, 191, 191);
     --filter-color-transition-duration: 200ms;
+    --filter-collapse-duration: 200ms;
+    --side-panel-content-fade-duration: 100ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --filter-color-transition-duration: 0ms;
+        --filter-collapse-duration: 0ms;
+        --side-panel-content-fade-duration: 0ms;
+    }
 }
 
 body, html {

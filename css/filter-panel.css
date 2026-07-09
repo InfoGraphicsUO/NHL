@@ -100,13 +100,47 @@
     outline-offset: 2px;
 }
 
+#filter-collapsed-label {
+    display: none;
+    font-weight: 700;
+    line-height: 1.5rem;
+    padding-right: 2rem;
+}
+
 #filter-toggle {
     position: absolute;
     right: 1rem;
     top:1rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
     font-size: 1.5rem;
     cursor: pointer;
     user-select: none;
+    z-index: 1;
+    line-height: 1;
+}
+
+#filter-toggle:focus-visible {
+    outline: 2px solid var(--filter-gold);
+    outline-offset: 3px;
+}
+
+#filter-panel.is-collapsed #filter-collapsed-label {
+    display: block;
+}
+
+#filter-content {
+    overflow: hidden;
+    opacity: 1;
+    padding-left: 7px;
+    margin-left: -7px;
+    transition: height var(--filter-collapse-duration) ease, opacity var(--filter-collapse-duration) ease;
+}
+
+#filter-panel.is-collapsed #filter-content {
+    opacity: 0;
+    pointer-events: none;
 }
 
 #filter-content label {

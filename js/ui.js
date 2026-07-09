@@ -75,6 +75,17 @@ function formatFullAddress(props) {
     return parts.join(', ');
 }
 
+function getCssDurationMs(variableName, fallbackMs) {
+    const value = getComputedStyle(document.documentElement)
+        .getPropertyValue(variableName)
+        .trim();
+    const parsed = value.endsWith('ms')
+        ? parseFloat(value)
+        : parseFloat(value) * 1000;
+
+    return Number.isFinite(parsed) ? parsed : fallbackMs;
+}
+
 function showCopyFeedback(button) {
     const feedback = button.parentElement.querySelector('.copy-feedback');
     if (!feedback) return;
@@ -259,22 +270,9 @@ function setupUI() {
         }
     }
 
-    function selectLandmark(feature) {
-        // select the landmark and update the map and side panel
-        const props = feature.properties;
-        const coordinates = feature.geometry.coordinates.slice();
+    let sidePanelSwitchToken = 0;
 
-        const mapInstance = window._nhlMapInstance;
-        mapInstance._selectedFeatureId = feature.id;
-        if (typeof setSelectedPointFilters === 'function') {
-            setSelectedPointFilters(mapInstance);
-        }
-
-        map.flyTo({
-            center: coordinates,
-            zoom: 13
-        });
-
+    function fillSidePanelContent(props) {
         if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
         const cityState = formatCityState(props);
         const address = (props.Address || '').trim();
@@ -338,9 +336,6 @@ function setupUI() {
             };
         }
 
-        updateSidePanelVisibility();
-        requestAnimationFrame(updateAddressCopyLayout);
-        // web pdf link in sidepanel
         const spDesc = document.getElementById('sp-desc');
         if (spDesc) {
             const refId = props.ReferenceID || 'Unknown';
@@ -350,7 +345,6 @@ function setupUI() {
             const modesHtml = renderModePillsHtml(getActiveModesFromProps(props));
             const areaOfSignificance = props.Areas_of_Signifance_Nomination_Forms || 'None';
 
-            // create the side panel description
             spDesc.innerHTML = `
                 <div class="side-panel-field">
                     <div class="side-panel-label">Reference ID</div>
@@ -393,6 +387,48 @@ function setupUI() {
                 });
             }
         }
+
+        updateSidePanelVisibility();
+        requestAnimationFrame(updateAddressCopyLayout);
+    }
+
+    function selectLandmark(feature) {
+        // select the landmark and update the map and side panel
+        const props = feature.properties;
+        const coordinates = feature.geometry.coordinates.slice();
+        const mapInstance = window._nhlMapInstance;
+        const previousId = mapInstance._selectedFeatureId;
+        const isContentSwitch = sidePanel?.classList.contains('is-open')
+            && previousId != null
+            && previousId !== feature.id;
+
+        mapInstance._selectedFeatureId = feature.id;
+        if (typeof setSelectedPointFilters === 'function') {
+            setSelectedPointFilters(mapInstance);
+        }
+
+        map.flyTo({
+            center: coordinates,
+            zoom: 13
+        });
+
+        const switchToken = ++sidePanelSwitchToken;
+
+        if (isContentSwitch) {
+            sidePanel.classList.add('is-switching');
+            setTimeout(() => {
+                if (switchToken !== sidePanelSwitchToken) return;
+                fillSidePanelContent(props);
+                requestAnimationFrame(() => {
+                    if (switchToken !== sidePanelSwitchToken) return;
+                    sidePanel.classList.remove('is-switching');
+                });
+            }, getCssDurationMs('--side-panel-content-fade-duration', 100));
+            return;
+        }
+
+        sidePanel?.classList.remove('is-switching');
+        fillSidePanelContent(props);
     }
 
     function onSourceReady() {
@@ -448,10 +484,59 @@ function setupUI() {
 
     //sidebar and filter toggle
     if (filterToggle && filterContent) {
+        const filterPanel = document.getElementById('filter-panel');
+        let filterAnimating = false;
+
+        const setFilterExpanded = (expanded) => {
+            if (!filterPanel || filterAnimating) return;
+            filterAnimating = true;
+            const transitionMs = getCssDurationMs('--filter-collapse-duration', 200);
+            let completionTimer;
+
+            const onTransitionEnd = (event) => {
+                if (event.target !== filterContent || event.propertyName !== 'height') return;
+                finish();
+            };
+
+            const finish = () => {
+                window.clearTimeout(completionTimer);
+                filterContent.removeEventListener('transitionend', onTransitionEnd);
+                if (expanded) {
+                    filterContent.style.height = 'auto';
+                }
+                filterAnimating = false;
+            };
+
+            filterContent.addEventListener('transitionend', onTransitionEnd);
+            filterToggle.setAttribute('aria-expanded', String(expanded));
+            filterToggle.setAttribute('aria-label', expanded ? 'Collapse filters' : 'Expand filters');
+
+            if (expanded) {
+                filterPanel.classList.remove('is-collapsed');
+                filterContent.style.height = '0px';
+                // force reflow so the open transition starts from 0
+                filterContent.offsetHeight;
+                filterContent.style.height = `${filterContent.scrollHeight}px`;
+                filterToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>';
+            } else {
+                filterContent.style.height = `${filterContent.scrollHeight}px`;
+                // force reflow so the close transition starts from full height
+                filterContent.offsetHeight;
+                filterPanel.classList.add('is-collapsed');
+                filterContent.style.height = '0px';
+                filterToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>';
+            }
+
+            if (transitionMs === 0) {
+                finish();
+            } else {
+                completionTimer = window.setTimeout(finish, transitionMs + 50);
+            }
+        };
+
         filterToggle.addEventListener('click', function() {
-            const isHidden = filterContent.style.display === 'none';
-            filterContent.style.display = isHidden ? 'block' : 'none';
-            filterToggle.innerHTML = isHidden ? '<i class="fa-duotone fa-regular fa-angle-up"></i>' : '<i class="fa-duotone fa-regular fa-angle-down"></i>';
+            const isCollapsed = filterPanel.classList.contains('is-collapsed');
+            setFilterExpanded(isCollapsed);
         });
     }
 
@@ -512,7 +597,7 @@ function updateSidePanelHeaderMargin() {
     if (!title || !header) return;
 
     const sidePanel = document.getElementById('side-panel');
-    if (!sidePanel || sidePanel.style.display === 'none') {
+    if (!sidePanel || !sidePanel.classList.contains('is-open')) {
         header.classList.remove('multiline');
         return;
     }
@@ -528,10 +613,10 @@ function updateSidePanelVisibility() {
     const mapInstance = window._nhlMapInstance;
     if (sidePanel) {
         if (mapInstance && mapInstance._selectedFeatureId != null) {
-            sidePanel.style.display = 'flex';
+            sidePanel.classList.add('is-open');
             requestAnimationFrame(updateSidePanelHeaderMargin);
         } else {
-            sidePanel.style.display = 'none';
+            sidePanel.classList.remove('is-open', 'is-switching');
         }
     }
 }

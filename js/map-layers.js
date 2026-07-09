@@ -213,13 +213,7 @@ function togglemodeSymbology(animateColors = false) {
     window.modeSymbologyEnabled = isEnabled;
 
     if (animateColors && filterContent) {
-        const transitionDuration = getComputedStyle(document.documentElement)
-            .getPropertyValue('--filter-color-transition-duration')
-            .trim();
-        const parsedTransitionMs = transitionDuration.endsWith('ms')
-            ? parseFloat(transitionDuration)
-            : parseFloat(transitionDuration) * 1000;
-        const transitionMs = Number.isFinite(parsedTransitionMs) ? parsedTransitionMs : 200;
+        const transitionMs = getCssDurationMs('--filter-color-transition-duration', 200);
 
         filterContent.classList.add('symbology-colors-changing');
         // force the transition class to apply before changing the checkbox color variables
