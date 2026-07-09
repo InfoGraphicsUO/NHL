@@ -12,6 +12,9 @@ const NoneCondition = ["all",
     ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1']
 ];
 
+// flyTo on point select only when current zoom is below this level
+const FLY_TO_MAX_ZOOM = 7;
+
 $(document).ready(function() {
     mapInits();
     setTimeout(setupUI, 500);
@@ -406,10 +409,12 @@ function setupUI() {
             setSelectedPointFilters(mapInstance);
         }
 
-        map.flyTo({
-            center: coordinates,
-            zoom: 13
-        });
+        if (map.getZoom() < FLY_TO_MAX_ZOOM) {
+            map.flyTo({
+                center: coordinates,
+                zoom: 13
+            });
+        }
 
         const switchToken = ++sidePanelSwitchToken;
 
