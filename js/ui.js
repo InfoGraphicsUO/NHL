@@ -41,43 +41,6 @@ function hasUsableAddress(address) {
     return value.length > 0 && !/^address restricted$/i.test(value);
 }
 
-function addressContainsPart(address, part) {
-    const needle = (part || '').trim().toLowerCase();
-    if (!needle) return true;
-
-    const haystack = (address || '').trim().toLowerCase();
-    if (haystack.includes(needle)) return true;
-
-    return address.split(',').some(segment => segment.trim().toLowerCase() === needle);
-}
-
-function formatFullAddress(props) {
-    const street = (props.Address || '').trim();
-    if (!hasUsableAddress(street)) return '';
-
-    const city = (props.City || '').trim();
-    const state = (props.State || '').trim();
-    const county = (props.County || '').trim();
-
-    const parts = [street];
-    const hasCity = addressContainsPart(street, city);
-    const hasState = addressContainsPart(street, state);
-
-    if (!hasCity) {
-        if (city) {
-            parts.push(city);
-        } else if (county && !addressContainsPart(street, county)) {
-            parts.push(county);
-        }
-    }
-
-    if (!hasState && state) {
-        parts.push(state);
-    }
-
-    return parts.join(', ');
-}
-
 function getCssDurationMs(variableName, fallbackMs) {
     const value = getComputedStyle(document.documentElement)
         .getPropertyValue(variableName)
@@ -200,7 +163,6 @@ function setupUI() {
     const addressExpandBtn = document.getElementById('address-expand-btn');
     const spAddress = document.getElementById('side-panel-address');
     const addressText = spAddress?.querySelector('.address-text');
-    const copyAddressBtn = spAddress?.querySelector('.copy-address-btn');
     const spClose = document.getElementById('side-panel-close');
     setupHoverInfoIcons(document);
 
@@ -313,7 +275,6 @@ function setupUI() {
                         ? '<i class="fa-duotone fa-regular fa-angle-up"></i>'
                         : '<i class="fa-duotone fa-regular fa-angle-down"></i>';
                     spAddress.hidden = !nextExpanded;
-                    requestAnimationFrame(updateAddressCopyLayout);
                 };
 
                 locationLine.onclick = toggleAddressExpand;
@@ -328,14 +289,6 @@ function setupUI() {
 
         if (addressText) {
             addressText.textContent = canShowAddress ? address : '';
-        }
-
-        if (copyAddressBtn) {
-            copyAddressBtn.onclick = () => {
-                if (!canShowAddress) return;
-                const fullAddress = formatFullAddress(props);
-                navigator.clipboard.writeText(fullAddress).then(() => showCopyFeedback(copyAddressBtn));
-            };
         }
 
         const spDesc = document.getElementById('sp-desc');
@@ -391,7 +344,6 @@ function setupUI() {
         }
 
         updateSidePanelVisibility();
-        requestAnimationFrame(updateAddressCopyLayout);
     }
 
     function selectLandmark(feature) {
@@ -596,7 +548,6 @@ function setupUI() {
 
     window.addEventListener('resize', () => {
         updateSidePanelHeaderMargin();
-        updateAddressCopyLayout();
     });
 
     const handleLandmarkClick = (e) => {
@@ -608,28 +559,6 @@ function setupUI() {
     map.on('click', 'nosymbologylandmark-selected', handleLandmarkClick);
     map.on('click', 'landmarks', handleLandmarkClick);
     map.on('click', 'landmarks-selected', handleLandmarkClick);
-}
-
-function updateAddressCopyLayout() {
-    const addressPanel = document.getElementById('side-panel-address');
-    const row = addressPanel?.querySelector('.address-row');
-    const addressText = row?.querySelector('.address-text');
-    const copyWrap = row?.querySelector('.copy-address-wrap');
-    const feedback = row?.querySelector('.copy-feedback');
-    if (!addressPanel || addressPanel.hidden || !row || !addressText || !copyWrap) return;
-
-    row.classList.remove('copy-below');
-
-    const copyWrapStyle = window.getComputedStyle(copyWrap);
-    const feedbackStyle = feedback ? window.getComputedStyle(feedback) : null;
-    const copyMargin = parseFloat(copyWrapStyle.marginLeft) || 0;
-    const feedbackMargin = feedbackStyle ? parseFloat(feedbackStyle.marginLeft) || 0 : 0;
-    const feedbackWidth = feedback ? feedback.offsetWidth + feedbackMargin : 0;
-    const requiredWidth = addressText.scrollWidth + copyWrap.offsetWidth + copyMargin + feedbackWidth;
-
-    if (requiredWidth > row.clientWidth) {
-        row.classList.add('copy-below');
-    }
 }
 
 function updateSidePanelHeaderMargin() {
