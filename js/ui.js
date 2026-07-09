@@ -564,7 +564,12 @@ function setupUI() {
 
         filterSections.push({ section, setSectionExpanded });
 
-        sectionToggle.addEventListener('click', () => {
+        const sectionHeader = section.querySelector('.filter-section-header');
+        if (!sectionHeader) return;
+
+        sectionHeader.addEventListener('click', (event) => {
+            // keep the info icon from collapsing the section
+            if (event.target.closest('.hover-info-trigger')) return;
             setSectionExpanded(section.classList.contains('is-collapsed'));
         });
     });
