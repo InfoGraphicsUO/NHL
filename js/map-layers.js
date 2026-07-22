@@ -1,6 +1,5 @@
 const ALL_POINTS_FILTER = ['==', ['literal', true], true];
 const EMPTY_FILTER = ['==', ['id'], -1];
-const LANDMARK_SOURCE_URL = 'data/NHL IGL Database - NHLDB.geojson';
 
 // zoom symbology for monument points
 const ICON_SIZE_STOPS = [ // [zoom level, icon size]
@@ -13,9 +12,6 @@ const ICON_SIZE_STOPS = [ // [zoom level, icon size]
 
 // selected scale for monument points
 const SELECTED_SCALE = 1.35;
-
-// exact-coordinate duplicates are shifted north so they can be hovered/clicked separately
-const DUPLICATE_COORDINATE_LAT_OFFSET = 0.00009;
 
 // layers for monument points without symbology
 const NOSYMBOLOGY_LAYERS = [
@@ -83,70 +79,6 @@ function shadowIconLayout() {
         'icon-allow-overlap': true,
         'icon-size': iconSizeZoom(),
     };
-}
-
-function getCoordinates(feature) {
-    const coordinates = feature.geometry?.coordinates;
-    if (Array.isArray(coordinates) && coordinates.length >= 2) {
-        return [Number(coordinates[0]), Number(coordinates[1])];
-    }
-
-    const lon = Number(feature.properties?.LON);
-    const lat = Number(feature.properties?.LAT);
-    return Number.isFinite(lon) && Number.isFinite(lat) ? [lon, lat] : null;
-}
-
-function coordinateKey(coordinates) {
-    // split the coordinates into a string
-    return coordinates.map(value => String(value)).join(',');
-}
-
-function offsetDuplicateCoordinateFeatures(geojson) {
-    // some monuments have identical coordinates
-    // we create an offset for duplicate coordinates so they can be hovered/clicked separately
-    const coordinateGroups = new Map();
-    geojson.features.forEach(feature => {
-        const coordinates = getCoordinates(feature);
-        if (!coordinates) {
-            return;
-        }
-
-        const key = coordinateKey(coordinates);
-        if (!coordinateGroups.has(key)) {
-            coordinateGroups.set(key, []);
-        }
-        coordinateGroups.get(key).push(feature);
-    });
-
-    coordinateGroups.forEach(group => {
-        group.forEach((feature, index) => {
-            if (index === 0 || !feature.geometry?.coordinates) {
-                return;
-            }
-
-            feature.geometry.coordinates = [
-                feature.geometry.coordinates[0],
-                feature.geometry.coordinates[1] + (index * DUPLICATE_COORDINATE_LAT_OFFSET)
-            ];
-        });
-    });
-
-    return geojson;
-}
-
-async function loadLandmarkSourceData() {
-    // grab the landmark source data from the url
-    const response = await fetch(LANDMARK_SOURCE_URL);
-    if (!response.ok) {
-        throw new Error(`Could not load landmark source: ${LANDMARK_SOURCE_URL}`);
-    }
-
-    const geojson = offsetDuplicateCoordinateFeatures(await response.json());
-    geojson.features.forEach((feature, index) => {
-        feature.id = index;
-    });
-
-    return geojson;
 }
 
 function selectedIdFilter(selectedId) {
