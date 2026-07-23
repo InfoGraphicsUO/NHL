@@ -3,6 +3,7 @@
 
 :root {
     --filter-gold: #b8860b;
+    --filter-gold-light: #e2c54f;
     --mode-acknowledged: #1D6A97;
     --mode-multiculturalism: #72AF47;
     --mode-valorization: #95356E;
@@ -13,6 +14,7 @@
     --slider-handle: #fcfbfb;
     --slider-handle-hover: #ebebeb;
     --switch-off: rgb(192, 191, 191);
+    --radius: 0.25rem;
     --filter-color-transition-duration: 200ms;
     --filter-collapse-duration: 200ms;
     --side-panel-content-fade-duration: 100ms;

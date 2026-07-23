@@ -1,17 +1,4 @@
 
-const NoneCondition = ["all",
-    ["!=", ["coalesce", ["get", "Acknowledged"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Multiculturalism"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Valorization"], '0'], '1'], 
-    ["!=", ["coalesce", ["get", "Erasure"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Colonization"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Nation_Building"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Settler_Colonization"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Slavery"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "State_Formation"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1']
-];
-
 // flyTo on point select only when current zoom is below this level
 const FLY_TO_MAX_ZOOM = 7;
 
@@ -20,14 +7,6 @@ $(document).ready(function() {
     setTimeout(setupUI, 500);
     updateSidePanelVisibility();
 });
-
-function getSelectedSupremacyForms() {
-    return Array.from(document.querySelectorAll('.supremacy-filter:checked')).map(cb => cb.value);
-}
-
-function getSelectedModes() {
-    return Array.from(document.querySelectorAll('.mode-filter:checked')).map(cb => cb.value);
-}
 
 function formatCityState(props) {
     const city = (props.City || '').trim();
@@ -147,15 +126,16 @@ function setupHoverInfoIcons(root = document) {
 }
 
 function setupUI() {
-    const yearSlider = setupYearSliderPanel();
-    if (!yearSlider) {
-        return;
-    }
-
     // map instance and ui elements
     const map = window._nhlMapInstance;
-    const filterToggle = document.getElementById('filter-toggle');
+    if (!map) {
+        console.warn('Map instance not found');
+        return;
+    }
     const sidePanel = document.getElementById('side-panel');
+    const resultsView = document.getElementById('results-view');
+    const detailView = document.getElementById('detail-view');
+    const detailBack = document.getElementById('detail-back');
     const spTitle = document.getElementById('side-panel-title');
     const spLocation = document.getElementById('side-panel-location');
     const spCityState = document.getElementById('side-panel-city-state');
@@ -165,77 +145,6 @@ function setupUI() {
     const addressText = spAddress?.querySelector('.address-text');
     const spClose = document.getElementById('side-panel-close');
     setupHoverInfoIcons(document);
-
-    function filterAll() {
-        const src = map.getSource('landmark-point-data');
-        if (!src) {
-            console.warn('GeoJSON source not found');
-            return;
-        }
-
-        // get current filter values
-        const [minYear, maxYear] = getYearSliderRange(yearSlider);
-        const yearField = getCurrentYearField();
-        const supremacy = getSelectedSupremacyForms();
-        const modes = getSelectedModes();
-        const isFullYearRange = isFullYearSliderRange(yearSlider);
-        // "None" selection
-        const isNoneSelected = modes.includes("None");
-        const isFOWSNoneSelected = supremacy.includes("None");
-        let filterExpr = ["all"];
-        if (!isFullYearRange) {
-            if (yearField.excludeMultiple) {
-                filterExpr.push(["!=", ["get", yearField.property], "Multiple"]);
-            }
-            // year filter
-            filterExpr.push([
-                "all",
-                [">=", ["to-number", ["get", yearField.property]], minYear],
-                ["<=", ["to-number", ["get", yearField.property]], maxYear]
-            ]);
-        }
-
-        // supremacy filter
-        if (supremacy.length > 0) {
-            let supremacyExpr = ["any"];
-            supremacy.forEach(s => {
-                if (s !== "None") {
-                    supremacyExpr.push(["==", ["get", s], "1"]);
-                }
-            });
-            if (isFOWSNoneSelected) {
-                supremacyExpr.push(NoneCondition);
-            }
-            filterExpr.push(supremacyExpr);
-        }
-
-        // modes filter
-        if (modes.length > 0) {
-            let modesExpr = ["any"];
-            modes.forEach(m => {
-                if (m !== "None") {
-                    modesExpr.push(["==", ["get", m], "1"]);
-                }
-            });
-            if (isNoneSelected) {
-                modesExpr.push(NoneCondition);
-            }
-            filterExpr.push(modesExpr);
-        } else {
-            filterExpr.push(["==", ["literal", true], false]);
-        }
-
-        if (typeof setActivePointFilters === 'function') {
-            // if the function is defined, use it to set the active point filters
-            setActivePointFilters(map, filterExpr);
-        } else {
-            // if the function is not defined, use the default filter
-            map.setFilter('landmarks', filterExpr);
-            if (map.getLayer('nosymbologylandmark')) {
-                map.setFilter('nosymbologylandmark', filterExpr);
-            }
-        }
-    }
 
     let sidePanelSwitchToken = 0;
 
@@ -351,6 +260,7 @@ function setupUI() {
 
     function selectLandmark(feature) {
         // select the landmark and update the map and side panel
+        if (!feature?.properties || !feature?.geometry?.coordinates) return;
         const props = feature.properties;
         const coordinates = feature.geometry.coordinates.slice();
         const mapInstance = window._nhlMapInstance;
@@ -362,6 +272,15 @@ function setupUI() {
         mapInstance._selectedFeatureId = feature.id;
         if (typeof setSelectedPointFilters === 'function') {
             setSelectedPointFilters(mapInstance);
+        }
+
+        const filterController = window._nhlFilterPanelController || window._filterPanelController;
+        if (typeof filterController?.showDetail === 'function') {
+            filterController.showDetail(feature);
+        } else {
+            if (resultsView) resultsView.hidden = true;
+            if (detailView) detailView.hidden = false;
+            sidePanel?.classList.add('is-open');
         }
 
         if (map.getZoom() < FLY_TO_MAX_ZOOM) {
@@ -390,44 +309,33 @@ function setupUI() {
         fillSidePanelContent(props);
     }
 
+    function clearLandmarkSelection({ restoreResults = true } = {}) {
+        sidePanelSwitchToken += 1;
+        map._selectedFeatureId = null;
+        if (typeof setSelectedPointFilters === 'function') {
+            setSelectedPointFilters(map);
+        }
+
+        sidePanel?.classList.remove('is-switching');
+        if (detailView) detailView.hidden = true;
+        if (restoreResults && resultsView) resultsView.hidden = false;
+        if (restoreResults) sidePanel?.classList.add('is-open');
+        updateSidePanelVisibility();
+    }
+
     function onSourceReady() {
-        setupSearchPanel(map, selectLandmark);
+        if (typeof window.setupFilterPanel !== 'function') {
+            console.warn('Filter panel controller not found');
+            return;
+        }
 
-        onYearSliderUpdate(yearSlider, function() {
-            filterAll();
+        // The controller owns draft/applied filtering and results rendering. UI keeps
+        // landmark selection and detail rendering in one place for map and card clicks.
+        window._filterPanelController = window.setupFilterPanel({
+            map,
+            onSelectLandmark: selectLandmark,
+            onClearSelection: clearLandmarkSelection
         });
-
-        // modes of rep switch function
-        document.querySelectorAll('.supremacy-filter, .mode-filter').forEach(cb => {
-            cb.addEventListener('change', filterAll);
-            let label = cb.closest('label');
-            if (!label) {
-                if (cb.id) {
-                    label = document.querySelector('label[for="' + cb.id + '"]');
-                }
-            }
-            const rightClickHandler = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const checkbox = cb;
-                const groupClass = checkbox.classList.contains('supremacy-filter') ? 'supremacy-filter' : 'mode-filter';
-                const groupBoxes = Array.from(document.querySelectorAll('.' + groupClass));
-                const onlyThisChecked = groupBoxes.every(box => (box === checkbox ? box.checked : !box.checked));
-                if (onlyThisChecked) {
-                    groupBoxes.forEach(box => { box.checked = true; });
-                } else {
-                    groupBoxes.forEach(box => { box.checked = (box === checkbox); });
-                }
-                filterAll();
-            };
-            cb.addEventListener('contextmenu', rightClickHandler);
-            if (label) {
-                label.addEventListener('contextmenu', function(e) {
-                    rightClickHandler(e);
-                });
-            }
-        });
-        filterAll();
     }
 
     if (map.isStyleLoaded() && map.getSource('landmark-point-data')) {
@@ -441,112 +349,10 @@ function setupUI() {
         });
     }
 
-    // filter section collapse toggles
-    const filterSections = [];
-
-    const syncFilterToggle = () => {
-        // syncs both individual section toggles + the main large toggle
-        if (!filterToggle) return;
-        const allCollapsed = filterSections.length > 0 && filterSections.every(({ section }) => section.classList.contains('is-collapsed'));
-        const expanded = !allCollapsed;
-        filterToggle.setAttribute('aria-expanded', String(expanded));
-        filterToggle.setAttribute('aria-label', expanded ? 'Collapse filters' : 'Expand filters');
-        filterToggle.innerHTML = expanded
-            ? '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>'
-            : '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>';
-    };
-
-    document.querySelectorAll('.filter-section').forEach(section => {
-        // for each filter section, add a toggle to collapse/expand the section
-        const sectionToggle = section.querySelector('.filter-section-toggle');
-        const sectionOptions = section.querySelector('.filter-section-options');
-        if (!sectionToggle || !sectionOptions) return;
-
-        let sectionAnimating = false; // prevents multiple animations from happening at once
-        const sectionLabel = sectionToggle.getAttribute('aria-label')?.replace(/^Collapse\s+|^Expand\s+/, '') || 'section';
-
-        const setSectionExpanded = (expanded) => {
-            if (sectionAnimating || section.classList.contains('is-collapsed') === !expanded) {
-                if (!sectionAnimating) syncFilterToggle();
-                return;
-            }
-            sectionAnimating = true;
-            const transitionMs = getCssDurationMs('--filter-collapse-duration', 200);
-            let completionTimer;
-
-            const onTransitionEnd = (event) => {
-                if (event.target !== sectionOptions || event.propertyName !== 'height') return;
-                finish();
-            };
-
-            const finish = () => {
-                window.clearTimeout(completionTimer);
-                sectionOptions.removeEventListener('transitionend', onTransitionEnd);
-                if (expanded) {
-                    sectionOptions.style.height = 'auto';
-                }
-                sectionAnimating = false;
-            };
-
-            sectionOptions.addEventListener('transitionend', onTransitionEnd);
-            sectionToggle.setAttribute('aria-expanded', String(expanded));
-            sectionToggle.setAttribute('aria-label', `${expanded ? 'Collapse' : 'Expand'} ${sectionLabel}`);
-
-            if (expanded) {
-                // if expanded, remove the collapsed class and set the height to the scroll height
-                section.classList.remove('is-collapsed');
-                sectionOptions.style.height = '0px';
-                sectionOptions.offsetHeight;
-                sectionOptions.style.height = `${sectionOptions.scrollHeight}px`;
-                sectionToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>';
-            } else {
-                // if collapsed, set the height to the scroll height and then set it to 0
-                sectionOptions.style.height = `${sectionOptions.scrollHeight}px`;
-                sectionOptions.offsetHeight;
-                section.classList.add('is-collapsed'); 
-                sectionOptions.style.height = '0px'; 
-                sectionToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>'; // update the toggle icon
-            }
-
-            syncFilterToggle(); // sync the main large toggle
-
-            if (transitionMs === 0) {
-                finish();
-            } else {
-                completionTimer = window.setTimeout(finish, transitionMs + 50);
-            }
-        };
-
-        filterSections.push({ section, setSectionExpanded });
-
-        const sectionHeader = section.querySelector('.filter-section-header');
-        if (!sectionHeader) return;
-
-        sectionHeader.addEventListener('click', (event) => {
-            // keep the info icon from collapsing the section
-            if (event.target.closest('.hover-info-trigger')) return;
-            setSectionExpanded(section.classList.contains('is-collapsed'));
-        });
-    });
-
-    if (filterToggle) {
-        filterToggle.addEventListener('click', () => {
-            const allCollapsed = filterSections.every(({ section }) => section.classList.contains('is-collapsed'));
-            filterSections.forEach(({ setSectionExpanded }) => setSectionExpanded(allCollapsed));
-        });
-    }
-
-    if (spClose && sidePanel) {
-        spClose.addEventListener('click', () => {
-            const mapInstance = window._nhlMapInstance;
-            if (mapInstance && mapInstance._selectedFeatureId !== null) {
-                mapInstance._selectedFeatureId = null;
-                if (typeof setSelectedPointFilters === 'function') {
-                    setSelectedPointFilters(mapInstance);
-                }
-            }
-            updateSidePanelVisibility();
-        });
+    // Back supersedes the old detail close button. Keep this fallback so older
+    // markup still returns to results during a rolling deployment.
+    if (spClose && spClose !== detailBack && !detailBack) {
+        spClose.addEventListener('click', () => clearLandmarkSelection());
     }
 
     window.addEventListener('resize', () => {
@@ -581,15 +387,26 @@ function updateSidePanelHeaderMargin() {
 }
 
 function updateSidePanelVisibility() {
-    // prevents empty side panel on refresh
     const sidePanel = document.getElementById('side-panel');
+    const resultsView = document.getElementById('results-view');
+    const detailView = document.getElementById('detail-view');
     const mapInstance = window._nhlMapInstance;
-    if (sidePanel) {
-        if (mapInstance && mapInstance._selectedFeatureId != null) {
-            sidePanel.classList.add('is-open');
-            requestAnimationFrame(updateSidePanelHeaderMargin);
-        } else {
-            sidePanel.classList.remove('is-open', 'is-switching');
-        }
+    if (!sidePanel) return;
+
+    if (mapInstance && mapInstance._selectedFeatureId != null) {
+        sidePanel.classList.add('is-open');
+        if (resultsView) resultsView.hidden = true;
+        if (detailView) detailView.hidden = false;
+        requestAnimationFrame(updateSidePanelHeaderMargin);
+        return;
+    }
+
+    sidePanel.classList.remove('is-switching');
+    if (detailView) detailView.hidden = true;
+
+    // With the shared shell, the filter/results controller owns whether the
+    // panel is open. Preserve the legacy close behavior only for old markup.
+    if (!resultsView) {
+        sidePanel.classList.remove('is-open');
     }
 }

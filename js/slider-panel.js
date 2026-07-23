@@ -1,31 +1,31 @@
-const YEAR_SLIDER_MAX = 2026; // this is the same for each year field for consistency
-// as of 2026
-// form year actual range: 1957 - 2012 
-// year designated actual range: 1937 - 2024
+const YEAR_SLIDER_MAX = 2026;
 
 const YEAR_FIELD_OPTIONS = {
     formYear: {
         key: 'formYear',
-        label: 'Form Year',
+        label: 'Form year',
         property: 'Form Year',
         min: 1950,
         max: YEAR_SLIDER_MAX,
         excludeMultiple: true,
-        ariaName: 'form year'
+        elementIds: ['form-year-slider', 'year-slider'],
+        resetIds: ['form-year-reset', 'year-reset'],
+        modeIds: ['form-year-mode']
     },
     nhlYear: {
         key: 'nhlYear',
-        label: 'Year Designated',
+        label: 'Year designated',
         property: 'NHL_Year',
         min: 1937,
         max: YEAR_SLIDER_MAX,
         excludeMultiple: false,
-        ariaName: 'year designated'
+        elementIds: ['designation-year-slider', 'nhl-year-slider'],
+        resetIds: ['designation-year-reset', 'nhl-year-reset'],
+        modeIds: ['designation-year-mode']
     }
 };
 
-const YEAR_SLIDER_MIN = YEAR_FIELD_OPTIONS.formYear.min; 
-
+const YEAR_SLIDER_MIN = YEAR_FIELD_OPTIONS.formYear.min;
 let currentYearFieldKey = YEAR_FIELD_OPTIONS.formYear.key;
 
 function getYearFieldOption(key = currentYearFieldKey) {
@@ -36,235 +36,277 @@ function getCurrentYearField() {
     return getYearFieldOption();
 }
 
-function setupYearSliderPanel() {
-    const yearSlider = document.getElementById('year-slider');
-    const yearReset = document.getElementById('year-reset');
-    const yearFieldPicker = document.getElementById('year-field-picker');
-    const initialField = getCurrentYearField();
+function firstElementById(ids = []) {
+    for (const id of ids) {
+        const element = document.getElementById(id);
+        if (element) return element;
+    }
+    return null;
+}
 
-    if (!yearSlider) {
-        console.warn('Year slider element not found');
-        return null;
+function parseSliderValues(raw) {
+    const values = Array.isArray(raw) ? raw : [raw];
+    return values.map(value => parseInt(value, 10));
+}
+
+function getYearSliderRange(yearSlider) {
+    if (!yearSlider?.noUiSlider) return null;
+    return parseSliderValues(yearSlider.noUiSlider.get());
+}
+
+function clampYear(value, field) {
+    return Math.min(field.max, Math.max(field.min, Math.round(value)));
+}
+
+function createYearSlider(field, onDraftChange) {
+    const element = firstElementById(field.elementIds);
+    if (!element || typeof noUiSlider === 'undefined') return null;
+
+    let mode = 'range';
+    let tooltipInputs = [];
+    const modeToggle = firstElementById(field.modeIds);
+    const reset = firstElementById(field.resetIds);
+
+    function isSpecific() {
+        return mode === 'specific';
     }
 
-    noUiSlider.create(yearSlider, {
-        // initialize slider using noUiSlider
-        start: [initialField.min, initialField.max],
-        step: 1,
-        range: {
-            min: initialField.min,
-            max: initialField.max
-        },
-        connect: true,
-        tooltips: false,
-        behaviour: 'drag',
-        format: {
-            to: value => Math.round(value),
-            from: value => Number(value)
+    function range() {
+        const values = getYearSliderRange(element);
+        if (!values || !values.length) return [field.min, field.max];
+        if (isSpecific()) {
+            const year = values[0];
+            return [year, year];
         }
-    });
-
-    const yearTooltipInputs = [];
-
-    function getCurrentSliderYears() {
-        return getYearSliderRange(yearSlider);
+        return values.length === 1 ? [values[0], values[0]] : values;
     }
 
-    function syncYearTooltipInputs() {
-        // sync the year tooltip inputs with the slider values
-        const values = getCurrentSliderYears();
-        yearTooltipInputs.forEach((input, index) => {
-            if (document.activeElement !== input) {
-                input.value = values[index];
-            }
+    function syncInputs() {
+        const values = range();
+        tooltipInputs.forEach((input, index) => {
+            if (!input || document.activeElement === input) return;
+            input.value = isSpecific() ? values[0] : values[index];
         });
     }
 
-    function updateYearTooltipAriaLabels() {
-        const field = getCurrentYearField();
-        yearTooltipInputs.forEach((input, index) => {
-            if (!input) return;
-            input.setAttribute(
-                'aria-label',
-                index === 0 ? `Minimum ${field.ariaName}` : `Maximum ${field.ariaName}`
-            );
-        });
-    }
-
-    function parseValidYear(value) {
-        const trimmedValue = value.trim();
-        if (!/^\d+$/.test(trimmedValue)) {
-            return null;
-        }
-
-        const field = getCurrentYearField();
-        const year = Number(trimmedValue);
-        if (!Number.isInteger(year) || year < field.min || year > field.max) {
-            return null;
-        }
-
-        return year;
-    }
-
-    function commitYearTooltipInput(input, handleIndex) {
-        // when user submits their year input, parse it and update the slider
-        // users can commit using enter or by clicking outside of the div
-        const selectedYear = parseValidYear(input.value);
-        const currentYears = getCurrentSliderYears();
-
-        if (selectedYear === null) {
-            // if the year is invalid, reset the input to the current slider value
-            input.value = currentYears[handleIndex];
+    function commitInput(input, index) {
+        const value = input.value.trim();
+        const number = /^\d+$/.test(value) ? Number(value) : NaN;
+        if (!Number.isInteger(number) || number < field.min || number > field.max) {
+            input.value = isSpecific() ? range()[0] : range()[index];
             return;
         }
 
-        let [minYear, maxYear] = currentYears;
-        if (handleIndex === 0) {
-            // if the user is adjusting the minimum year, update the minimum year
-            minYear = selectedYear;
-            if (selectedYear > maxYear) {
-                maxYear = selectedYear;
-            }
-        } else {
-            // if the user is adjusting the maximum year, update the maximum year
-            maxYear = selectedYear;
-            if (selectedYear < minYear) {
-                minYear = selectedYear;
-            }
+        if (isSpecific()) {
+            element.noUiSlider.set(number);
+            return;
         }
 
-        yearSlider.noUiSlider.set([minYear, maxYear]);
+        let [minimum, maximum] = range();
+        if (index === 0) {
+            minimum = number;
+            maximum = Math.max(maximum, number);
+        } else {
+            maximum = number;
+            minimum = Math.min(minimum, number);
+        }
+        element.noUiSlider.set([minimum, maximum]);
     }
 
-    function setupYearTooltipInputs() {
-        // users can input years directly into the slider by clicking on the year tooltip
-        yearSlider.querySelectorAll('.noUi-handle').forEach((handle, index) => {
+    function setupTooltips() {
+        tooltipInputs = [];
+        element.querySelectorAll('.noUi-handle').forEach((handle, index) => {
             const tooltip = document.createElement('div');
             const input = document.createElement('input');
-
             tooltip.className = 'noUi-tooltip';
             input.className = 'year-tooltip-input';
             input.type = 'text';
             input.inputMode = 'numeric';
+            const label = isSpecific()
+                ? field.label
+                : `${index === 0 ? 'Minimum' : 'Maximum'} ${field.label.toLowerCase()}`;
+            input.setAttribute('aria-label', label);
 
             ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(eventName => {
                 input.addEventListener(eventName, event => event.stopPropagation());
             });
-
             input.addEventListener('focus', () => input.select());
             input.addEventListener('keydown', event => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    commitYearTooltipInput(input, index);
+                    commitInput(input, index);
                     input.blur();
                 } else if (event.key === 'Escape') {
-                    input.value = getCurrentSliderYears()[index];
+                    input.value = isSpecific() ? range()[0] : range()[index];
                     input.blur();
                 }
             });
-            input.addEventListener('blur', () => commitYearTooltipInput(input, index));
-
+            input.addEventListener('blur', () => commitInput(input, index));
             tooltip.appendChild(input);
             handle.appendChild(tooltip);
-            yearTooltipInputs[index] = input;
+            tooltipInputs[index] = input;
+        });
+    }
+
+    function bindSliderEvents() {
+        element.noUiSlider.off('.filterPanel');
+        element.noUiSlider.on('update.filterPanel', syncInputs);
+        if (typeof onDraftChange === 'function') {
+            // `set` covers pointer/keyboard changes plus editable year inputs and Reset.
+            // Unlike `update`, registering this handler does not fire during setup.
+            element.noUiSlider.on('set.filterPanel', onDraftChange);
+        }
+        syncInputs();
+    }
+
+    function updateAriaLabel() {
+        element.setAttribute(
+            'aria-label',
+            isSpecific() ? `${field.label} specific year` : `${field.label} range`
+        );
+    }
+
+    function buildSlider(start) {
+        if (element.noUiSlider) element.noUiSlider.destroy();
+        tooltipInputs = [];
+
+        const specific = isSpecific();
+        const startValue = specific
+            ? [clampYear(start[0] ?? start, field)]
+            : [clampYear(start[0], field), clampYear(start[1] ?? start[0], field)];
+
+        element.classList.toggle('is-specific', specific);
+        updateAriaLabel();
+
+        noUiSlider.create(element, {
+            start: specific ? startValue[0] : startValue,
+            step: 1,
+            range: { min: field.min, max: field.max },
+            connect: specific ? false : true,
+            tooltips: false,
+            behaviour: specific ? 'tap-drag' : 'drag',
+            format: {
+                to: value => Math.round(value),
+                from: value => Number(value)
+            }
         });
 
-        updateYearTooltipAriaLabels();
-        syncYearTooltipInputs();
+        setupTooltips();
+        bindSliderEvents();
     }
 
-    function syncYearFieldPickerWidth() {
-        // helps ensure the year field picker is the correct width
-        if (!yearFieldPicker) return;
-
-        const selectedOption = yearFieldPicker.options[yearFieldPicker.selectedIndex];
-        if (!selectedOption) return;
-
-        const measure = document.createElement('span');
-        const styles = getComputedStyle(yearFieldPicker);
-
-        measure.textContent = selectedOption.text;
-        measure.style.cssText = [
-            'position:absolute',
-            'visibility:hidden',
-            'white-space:nowrap',
-            `font:${styles.font}`,
-            `letter-spacing:${styles.letterSpacing}`,
-            `text-transform:${styles.textTransform}`
-        ].join(';');
-
-        document.body.appendChild(measure);
-        // size select to the selected label text only; icon sits beside it
-        yearFieldPicker.style.width = `${Math.ceil(measure.getBoundingClientRect().width) + 4}px`;
-        measure.remove();
-    }
-
-    function clampYearToFieldRange(year, field) {
-        return Math.min(field.max, Math.max(field.min, year));
-    }
-
-    function applyYearField(fieldKey) {
-        // applies the year field to the slider
-        const field = getYearFieldOption(fieldKey);
-        const [currentMinYear, currentMaxYear] = getCurrentSliderYears();
-        currentYearFieldKey = field.key;
-
-        if (yearFieldPicker && yearFieldPicker.value !== field.key) {
-            yearFieldPicker.value = field.key;
+    function setMode(nextMode, { preserveValue = true } = {}) {
+        const next = nextMode === 'specific' ? 'specific' : 'range';
+        if (next === mode && element.noUiSlider) {
+            if (modeToggle) modeToggle.checked = next === 'specific';
+            return;
         }
 
-        syncYearFieldPickerWidth();
-        updateYearTooltipAriaLabels();
+        const current = element.noUiSlider ? range() : [field.min, field.max];
+        mode = next;
+        if (modeToggle) modeToggle.checked = mode === 'specific';
 
-        // preserve the user's range when switching fields; clamp only if out of range
-        let nextMinYear = clampYearToFieldRange(currentMinYear, field);
-        let nextMaxYear = clampYearToFieldRange(currentMaxYear, field);
-        if (nextMinYear > nextMaxYear) {
-            nextMaxYear = nextMinYear;
+        if (mode === 'specific') {
+            const year = preserveValue
+                ? clampYear(Math.round((current[0] + current[1]) / 2), field)
+                : clampYear(Math.round((field.min + field.max) / 2), field);
+            buildSlider([year, year]);
+        } else {
+            buildSlider(preserveValue && current[0] !== current[1] ? current : [field.min, field.max]);
         }
 
-        yearSlider.noUiSlider.updateOptions({
-            range: {
-                min: field.min,
-                max: field.max
-            },
-            start: [nextMinYear, nextMaxYear]
+        if (typeof onDraftChange === 'function') onDraftChange();
+    }
+
+    function resetSlider() {
+        mode = 'range';
+        if (modeToggle) modeToggle.checked = false;
+        buildSlider([field.min, field.max]);
+        if (typeof onDraftChange === 'function') onDraftChange();
+    }
+
+    buildSlider([field.min, field.max]);
+
+    if (modeToggle && !modeToggle.dataset.filterSliderModeInitialized) {
+        modeToggle.dataset.filterSliderModeInitialized = 'true';
+        modeToggle.checked = false;
+        modeToggle.addEventListener('change', () => {
+            setMode(modeToggle.checked ? 'specific' : 'range');
         });
     }
 
-    setupYearTooltipInputs();
-    yearSlider.noUiSlider.on('update', syncYearTooltipInputs);
-
-    if (yearFieldPicker) {
-        // initialize the year field picker with the initial field
-        yearFieldPicker.value = initialField.key;
-        syncYearFieldPickerWidth(); // ensure the year field picker is the correct width
-        yearFieldPicker.addEventListener('change', () => {
-            applyYearField(yearFieldPicker.value); // apply the year field to the slider
-        });
+    if (reset && !reset.dataset.filterSliderInitialized) {
+        reset.dataset.filterSliderInitialized = 'true';
+        reset.addEventListener('click', resetSlider);
     }
 
-    if (yearReset) {
-        yearReset.addEventListener('click', function() {
-            const field = getCurrentYearField();
-            yearSlider.noUiSlider.set([field.min, field.max]);
-        });
-    }
-
-    return yearSlider;
+    return {
+        element,
+        getRange: range,
+        getMode: () => mode,
+        setMode,
+        reset: resetSlider,
+        setRange(values) {
+            const next = values || [field.min, field.max];
+            if (isSpecific()) {
+                const year = clampYear(next[0], field);
+                element.noUiSlider.set(year);
+            } else {
+                element.noUiSlider.set([clampYear(next[0], field), clampYear(next[1] ?? next[0], field)]);
+            }
+        }
+    };
 }
 
-function getYearSliderRange(yearSlider) {
-    return yearSlider.noUiSlider.get().map(value => parseInt(value, 10));
+function setupFilterYearSliders({ onDraftChange } = {}) {
+    const sliders = {};
+    Object.values(YEAR_FIELD_OPTIONS).forEach(field => {
+        sliders[field.key] = createYearSlider(field, onDraftChange);
+    });
+
+    return {
+        elements: Object.fromEntries(
+            Object.entries(sliders).map(([key, slider]) => [key, slider?.element || null])
+        ),
+        controllers: sliders,
+        getRanges() {
+            const ranges = {};
+            Object.values(YEAR_FIELD_OPTIONS).forEach(field => {
+                ranges[field.key] = sliders[field.key]?.getRange() || [field.min, field.max];
+            });
+            return ranges;
+        },
+        setRanges(ranges = {}) {
+            Object.values(YEAR_FIELD_OPTIONS).forEach(field => {
+                const slider = sliders[field.key];
+                if (!slider) return;
+                slider.setRange(ranges[field.key] || [field.min, field.max]);
+            });
+        },
+        reset() {
+            Object.values(YEAR_FIELD_OPTIONS).forEach(field => {
+                sliders[field.key]?.reset();
+            });
+        }
+    };
 }
 
-function isFullYearSliderRange(yearSlider) {
-    // checks if the slider is at the full range of the current year field
-    const field = getCurrentYearField();
-    const [minYear, maxYear] = getYearSliderRange(yearSlider);
-    return minYear === field.min && maxYear === field.max;
+// Compatibility helpers for callers from the former single-slider panel.
+function setupYearSliderPanel() {
+    return setupFilterYearSliders().elements.formYear;
+}
+
+function isFullYearSliderRange(yearSlider, fieldKey = currentYearFieldKey) {
+    const field = getYearFieldOption(fieldKey);
+    const range = getYearSliderRange(yearSlider);
+    if (!range) return true;
+    const minimum = range[0];
+    const maximum = range[1] ?? range[0];
+    return minimum === field.min && maximum === field.max;
 }
 
 function onYearSliderUpdate(yearSlider, callback) {
-    yearSlider.noUiSlider.on('update', callback);
+    if (yearSlider?.noUiSlider) yearSlider.noUiSlider.on('update', callback);
 }
+
+window.setupFilterYearSliders = setupFilterYearSliders;
