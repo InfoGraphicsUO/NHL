@@ -29,6 +29,65 @@ function getSelectedModes() {
     return Array.from(document.querySelectorAll('.mode-filter:checked')).map(cb => cb.value);
 }
 
+function updateFilterResultCount(count) {
+    const resultCount = document.getElementById('filter-result-count');
+    if (!resultCount) return;
+    resultCount.textContent = `${count} ${count === 1 ? 'result' : 'results'}`;
+}
+
+function featureHasNoneCategories(props) {
+    return [
+        'Acknowledged', 'Multiculturalism', 'Valorization', 'Erasure',
+        'Colonization', 'Nation_Building', 'Settler_Colonization',
+        'Slavery', 'State_Formation', 'Racial_Capitalism'
+    ].every(field => props[field] !== '1');
+}
+
+function featureMatchesGroupFilter(props, selected, noneSelected) {
+    if (selected.length === 0) return false;
+    if (noneSelected && featureHasNoneCategories(props)) return true;
+    return selected.some(value => value !== 'None' && props[value] === '1');
+}
+
+function countFilteredFeatures(map, filterOptions) {
+    const features = map._landmarkSourceData?.features || [];
+    const {
+        minYear,
+        maxYear,
+        yearField,
+        supremacy,
+        modes,
+        states,
+        isFullYearRange,
+        isNoneSelected,
+        isFOWSNoneSelected
+    } = filterOptions;
+
+    return features.reduce((count, feature) => {
+        const props = feature.properties || {};
+
+        if (!isFullYearRange) {
+            const rawYear = props[yearField.property];
+            if (yearField.excludeMultiple && rawYear === 'Multiple') return count;
+            const year = Number(rawYear);
+            if (!Number.isFinite(year) || year < minYear || year > maxYear) return count;
+        }
+
+        if (supremacy.length > 0 && !featureMatchesGroupFilter(props, supremacy, isFOWSNoneSelected)) {
+            return count;
+        }
+        if (!featureMatchesGroupFilter(props, modes, isNoneSelected)) {
+            return count;
+        }
+        if (states.length > 0) {
+            const state = String(props.State || '').trim();
+            if (!states.includes(state)) return count;
+        }
+
+        return count + 1;
+    }, 0);
+}
+
 function formatCityState(props) {
     const city = (props.City || '').trim();
     const state = (props.State || '').trim();
@@ -178,6 +237,7 @@ function setupUI() {
         const yearField = getCurrentYearField();
         const supremacy = getSelectedSupremacyForms();
         const modes = getSelectedModes();
+        const states = typeof getSelectedStates === 'function' ? getSelectedStates() : [];
         const isFullYearRange = isFullYearSliderRange(yearSlider);
         // "None" selection
         const isNoneSelected = modes.includes("None");
@@ -225,6 +285,11 @@ function setupUI() {
             filterExpr.push(["==", ["literal", true], false]);
         }
 
+        // US state filter (multi-select; empty = all states)
+        if (states.length > 0) {
+            filterExpr.push(["in", ["get", "State"], ["literal", states]]);
+        }
+
         if (typeof setActivePointFilters === 'function') {
             // if the function is defined, use it to set the active point filters
             setActivePointFilters(map, filterExpr);
@@ -235,6 +300,18 @@ function setupUI() {
                 map.setFilter('nosymbologylandmark', filterExpr);
             }
         }
+
+        updateFilterResultCount(countFilteredFeatures(map, {
+            minYear,
+            maxYear,
+            yearField,
+            supremacy,
+            modes,
+            states,
+            isFullYearRange,
+            isNoneSelected,
+            isFOWSNoneSelected
+        }));
     }
 
     let sidePanelSwitchToken = 0;
@@ -391,7 +468,7 @@ function setupUI() {
     }
 
     function onSourceReady() {
-        setupSearchPanel(map, selectLandmark);
+        setupSearchPanel(map, selectLandmark, filterAll);
 
         onYearSliderUpdate(yearSlider, function() {
             filterAll();

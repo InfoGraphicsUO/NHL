@@ -1,10 +1,100 @@
-function setupSearchPanel(map, selectLandmark) {
+function getSelectedStates() {
+    return Array.from(document.querySelectorAll('.state-filter:checked')).map(cb => cb.value);
+}
+
+function updateStateFilterLabel() {
+    const label = document.getElementById('state-filter-label');
+    if (!label) return;
+
+    const selected = getSelectedStates();
+    if (selected.length === 0) {
+        label.textContent = 'All states';
+        return;
+    }
+    if (selected.length === 1) {
+        label.textContent = selected[0];
+        return;
+    }
+    if (selected.length <= 3) {
+        label.textContent = selected.join(', ');
+        return;
+    }
+    label.textContent = `${selected.length} states`;
+}
+
+function setupStateFilter(map, onChange) {
+    const toggle = document.getElementById('state-filter-toggle');
+    const menu = document.getElementById('state-filter-menu');
+    if (!toggle || !menu || toggle._stateFilterInitialized) return;
+
+    toggle._stateFilterInitialized = true;
+
+    const states = Array.from(new Set(
+        (map._landmarkSourceData?.features || [])
+            .map(feature => String(feature.properties?.State || '').trim())
+            .filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+    menu.replaceChildren();
+    states.forEach(state => {
+        const label = document.createElement('label');
+        label.className = 'state-filter-option';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'state-filter';
+        checkbox.value = state;
+
+        const text = document.createElement('span');
+        text.textContent = state;
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        menu.appendChild(label);
+
+        checkbox.addEventListener('change', () => {
+            updateStateFilterLabel();
+            if (typeof onChange === 'function') onChange();
+        });
+    });
+
+    updateStateFilterLabel();
+
+    function setMenuOpen(open) {
+        menu.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+    }
+
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setMenuOpen(menu.hidden);
+    });
+
+    menu.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    document.addEventListener('click', () => {
+        if (!menu.hidden) setMenuOpen(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !menu.hidden) {
+            setMenuOpen(false);
+            toggle.focus();
+        }
+    });
+}
+
+function setupSearchPanel(map, selectLandmark, onFilterChange) {
     const searchInput = document.getElementById('monument-search');
     const searchResults = document.getElementById('search-results');
     const searchSubmit = document.getElementById('search-submit');
 
     let currentSearchMatches = [];
     let activeSearchIndex = 0;
+
+    setupStateFilter(map, onFilterChange);
 
     function clearSearchResults() {
         if (!searchResults) return;

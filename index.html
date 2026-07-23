@@ -86,6 +86,16 @@
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
+            <div class="search-filter-row">
+                <div class="state-filter-wrap">
+                    <button type="button" id="state-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="state-filter-menu">
+                        <span id="state-filter-label">All states</span>
+                        <i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>
+                    </button>
+                    <div id="state-filter-menu" role="listbox" aria-multiselectable="true" hidden></div>
+                </div>
+                <span id="filter-result-count" aria-live="polite">0 results</span>
+            </div>
             <div id="search-results" aria-live="polite"></div>
         </div>
 
