@@ -6,12 +6,12 @@
     min-width: 180px;
     padding: 0.75rem 1rem;
     background: rgba(255, 255, 255, 0.95);
-    border-radius: 30px;
+    border-radius: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     color: #111;
     font-family: 'Montserrat', Arial, Helvetica, sans-serif;
     pointer-events: none;
-    z-index: 20;
+    z-index: 1000;
     opacity: 0;
     transform: translateY(4px);
     visibility: hidden;

@@ -9,134 +9,266 @@
         <script src="https://api.mapbox.com/mapbox-gl-js/v3.13.0/mapbox-gl.js"></script>
         <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
         <script defer src="https://kit.fontawesome.com/be4ea184d4.js" crossorigin="anonymous"></script>
-        <!-- Papa Parse (CSV parsing) -->
         <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 
-        <script src="js/search-panel.js"></script>
         <script src="js/slider-panel.js"></script>
+        <script src="js/filter-panel.js"></script>
         <script src="js/ui.js"></script>
         <script src="js/hover-info-box.js"></script>
         <script src="js/data-actions.js"></script>
         <script src="js/map-layers.js"></script>
         <script src="js/map.js"></script>
 
-        <!-- noUiSlider (Year selection filter) -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css">
         <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="css/map.css">
-        <link rel="stylesheet" href="css/search-panel.css">
         <link rel="stylesheet" href="css/filter-panel.css">
-        <link rel="stylesheet" href="css/slider-panel.css">
         <link rel="stylesheet" href="css/hover-info-box.css">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="css/side-panel.css">
     </head>
     <body>
-        <!-- Combined Filters for Forms of White Supremacy and Modes of Representation -->
-        <div id="sidebar-container">
-            <div id="filter-panel">
-                <button id="filter-toggle" type="button" aria-controls="mode-filter-options supremacy-filter-options" aria-expanded="true" aria-label="Collapse filters"><i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i></button>
-                <div id="filter-content">
-                    <section class="filter-section" data-filter-section="modes">
-                        <div class="filter-section-header">
-                            <button class="filter-section-toggle" type="button" aria-controls="mode-filter-options" aria-expanded="true" aria-label="Collapse Modes of Representation"><i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i></button>
-                            <strong>Modes of Representation <span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about Modes of Representation" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span></strong>
-                        </div>
-                        <div class="filter-section-options" id="mode-filter-options">
-                            <label><input type="checkbox" class="mode-filter" value="Acknowledged" checked> Acknowledged</label>
-                            <label><input type="checkbox" class="mode-filter" value="Multiculturalism" checked> Multiculturalism</label>
-                            <label><input type="checkbox" class="mode-filter" value="Valorization" checked> Valorization</label>
-                            <label><input type="checkbox" class="mode-filter" value="Erasure" checked> Erasure</label>
-                            <label><input type="checkbox" class="mode-filter" value="None" checked> None</label>
-                            <div class="mode-symbology-switch">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="modeSymbologySwitch" onchange="togglemodeSymbology(true)">
-                                    <label class="form-check-label" for="modeSymbologySwitch">Color by category</label>
+        <main>
+            <aside id="filter-panel" aria-labelledby="filter-panel-title">
+                <div class="filter-panel-body">
+                    <h1 id="filter-panel-title">Filters</h1>
+
+                    <label class="visually-hidden" for="monument-search">Search monuments</label>
+                    <input type="search" id="monument-search" class="filter-search" placeholder="Search by name or keyword..." autocomplete="off">
+
+                    <div class="filter-summary">
+                        <button id="clear-filters" class="clear-filters-button" type="button">Clear all filters</button>
+                        <span class="active-filter-label">Total active filters <span id="active-filter-count" class="count-badge count-badge--zero" aria-live="polite">0</span></span>
+                    </div>
+
+                    <div class="filter-tabs" role="tablist" aria-label="Filter categories">
+                        <button id="filter-tab-modes" class="filter-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="modes-filter-panel"><span class="filter-tab-label">Modes of Representation</span> <span id="filter-tab-modes-count" class="count-badge count-badge--zero" aria-hidden="true">0</span></button>
+                        <button id="filter-tab-supremacy" class="filter-tab" type="button" role="tab" aria-selected="false" aria-controls="supremacy-filter-panel" tabindex="-1"><span class="filter-tab-label">Forms of White Supremacy</span> <span id="filter-tab-supremacy-count" class="count-badge count-badge--zero" aria-hidden="true">0</span></button>
+                        <button id="filter-tab-place" class="filter-tab" type="button" role="tab" aria-selected="false" aria-controls="place-filter-panel" tabindex="-1"><span class="filter-tab-label">Place</span> <span id="filter-tab-place-count" class="count-badge count-badge--zero" aria-hidden="true">0</span></button>
+                        <button id="filter-tab-time" class="filter-tab" type="button" role="tab" aria-selected="false" aria-controls="time-filter-panel" tabindex="-1"><span class="filter-tab-label">Time</span> <span id="filter-tab-time-count" class="count-badge count-badge--zero" aria-hidden="true">0</span></button>
+                        <button id="filter-tab-documentation" class="filter-tab" type="button" role="tab" aria-selected="false" aria-controls="documentation-filter-panel" tabindex="-1"><span class="filter-tab-label">Documentation</span> <span id="filter-tab-documentation-count" class="count-badge count-badge--zero" aria-hidden="true">0</span></button>
+                    </div>
+
+                    <div id="filter-content" class="filter-tab-content">
+                        <section id="modes-filter-panel" class="filter-tab-panel" role="tabpanel" aria-labelledby="filter-tab-modes">
+                            <fieldset class="checkbox-list">
+                                <legend class="visually-hidden">Modes of Representation</legend>
+                                <label><input type="checkbox" class="styled-checkbox mode-filter" value="Acknowledged" checked> <span>Acknowledged</span></label>
+                                <label><input type="checkbox" class="styled-checkbox mode-filter" value="Multiculturalism" checked> <span>Multiculturalism</span></label>
+                                <label><input type="checkbox" class="styled-checkbox mode-filter" value="Valorization" checked> <span>Valorization</span></label>
+                                <label><input type="checkbox" class="styled-checkbox mode-filter" value="Erasure" checked> <span>Erasure</span></label>
+                                <label><input type="checkbox" class="styled-checkbox mode-filter" value="None" checked> <span>None</span></label>
+                            </fieldset>
+                            <label class="switch-row" for="modeSymbologySwitch">
+                                <input type="checkbox" role="switch" id="modeSymbologySwitch">
+                                <span class="switch-control" aria-hidden="true"></span>
+                                <span>Color by category</span>
+                            </label>
+                        </section>
+
+                        <section id="supremacy-filter-panel" class="filter-tab-panel" role="tabpanel" aria-labelledby="filter-tab-supremacy" hidden>
+                            <fieldset class="checkbox-list">
+                                <legend class="visually-hidden">Forms of White Supremacy</legend>
+                                <label><input type="checkbox" class="styled-checkbox supremacy-filter" value="Colonization" checked> <span>Colonization</span></label>
+                                <label><input type="checkbox" class="styled-checkbox supremacy-filter" value="Nation_Building" checked> <span>Nation Building</span></label>
+                                <label><input type="checkbox" class="styled-checkbox supremacy-filter" value="Settler_Colonization" checked> <span>Settler Colonization</span></label>
+                                <label><input type="checkbox" class="styled-checkbox supremacy-filter" value="Slavery" checked> <span>Slavery</span></label>
+                                <label><input type="checkbox" class="styled-checkbox supremacy-filter" value="State_Formation" checked> <span>State Formation</span></label>
+                                <label><input type="checkbox" class="styled-checkbox supremacy-filter" value="Racial_Capitalism" checked> <span>Racial Capitalism</span></label>
+                                <label><input type="checkbox" class="styled-checkbox supremacy-filter" value="None" checked> <span>None</span></label>
+                            </fieldset>
+                        </section>
+
+                        <section id="place-filter-panel" class="filter-tab-panel" role="tabpanel" aria-labelledby="filter-tab-place" hidden>
+                            <div class="form-grid">
+                                <label for="state-filter-toggle">State</label>
+                                <div class="state-filter-row">
+                                    <div class="multi-select" id="state-filter" data-filter-field="state">
+                                        <button type="button" class="multi-select-toggle" id="state-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="state-filter-menu">
+                                            <span class="multi-select-label">Any</span>
+                                            <span class="multi-select-caret" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="multi-select-menu" id="state-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="state-filter-toggle" hidden></div>
+                                    </div>
+                                    <span id="state-monument-count" class="state-monument-count" aria-live="polite"></span>
+                                </div>
+
+                                <label for="nhl-office-filter-toggle">NHL Office</label>
+                                <div class="multi-select" id="nhl-office-filter" data-filter-field="office">
+                                    <button type="button" class="multi-select-toggle" id="nhl-office-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="nhl-office-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="nhl-office-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="nhl-office-filter-toggle" hidden></div>
+                                </div>
+
+                                <label for="city-filter">City</label>
+                                <input id="city-filter" type="search" placeholder="Filter by city..." autocomplete="off">
+
+                                <label for="county-filter">County</label>
+                                <input id="county-filter" type="search" placeholder="Filter by county..." autocomplete="off">
+
+                                <label for="national-park-filter-toggle">National Park</label>
+                                <div class="multi-select" id="national-park-filter" data-filter-field="nationalPark">
+                                    <button type="button" class="multi-select-toggle" id="national-park-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="national-park-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="national-park-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="national-park-filter-toggle" hidden></div>
+                                </div>
+
+                                <span>Restricted sites</span>
+                                <label class="switch-row switch-row-inline labeled-switch" for="restricted-sites-filter">
+                                    <input type="checkbox" role="switch" id="restricted-sites-filter" aria-label="Hide restricted sites">
+                                    <span class="switch-control switch-control-labeled" aria-hidden="true">
+                                        <span class="switch-option switch-option-off">Show</span>
+                                        <span class="switch-option switch-option-on">Hide</span>
+                                    </span>
+                                </label>
+
+                                <label for="federal-agency-filter-toggle">Federal Agency</label>
+                                <div class="multi-select" id="federal-agency-filter" data-filter-field="federalAgency">
+                                    <button type="button" class="multi-select-toggle" id="federal-agency-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="federal-agency-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="federal-agency-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="federal-agency-filter-toggle" hidden></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="time-filter-panel" class="filter-tab-panel" role="tabpanel" aria-labelledby="filter-tab-time" hidden>
+                            <div class="range-filter">
+                                <div class="range-filter-heading">
+                                    <span>Form year <button type="button" class="info-button hover-info-trigger" aria-label="More info about Form year" data-hover-info="Year the nomination form was prepared."><i class="fa-light fa-circle-info" aria-hidden="true"></i></button></span>
+                                    <div class="range-filter-actions">
+                                        <label class="switch-row switch-row-inline labeled-switch" for="form-year-mode">
+                                            <input type="checkbox" role="switch" id="form-year-mode" aria-label="Form year filter mode">
+                                            <span class="switch-control switch-control-labeled" aria-hidden="true">
+                                                <span class="switch-option switch-option-off">Range</span>
+                                                <span class="switch-option switch-option-on">Specific</span>
+                                            </span>
+                                        </label>
+                                        <button id="form-year-reset" class="reset-button" type="button">Reset</button>
+                                    </div>
+                                </div>
+                                <div id="form-year-slider" class="year-slider" aria-label="Form year range"></div>
+                            </div>
+                            <div class="range-filter">
+                                <div class="range-filter-heading">
+                                    <span>Year designated <button type="button" class="info-button hover-info-trigger" aria-label="More info about Year designated" data-hover-info="Year the property was designated a National Historic Landmark."><i class="fa-light fa-circle-info" aria-hidden="true"></i></button></span>
+                                    <div class="range-filter-actions">
+                                        <label class="switch-row switch-row-inline labeled-switch" for="designation-year-mode">
+                                            <input type="checkbox" role="switch" id="designation-year-mode" aria-label="Year designated filter mode">
+                                            <span class="switch-control switch-control-labeled" aria-hidden="true">
+                                                <span class="switch-option switch-option-off">Range</span>
+                                                <span class="switch-option switch-option-on">Specific</span>
+                                            </span>
+                                        </label>
+                                        <button id="designation-year-reset" class="reset-button" type="button">Reset</button>
+                                    </div>
+                                </div>
+                                <div id="designation-year-slider" class="year-slider" aria-label="Year designated range"></div>
+                            </div>
+                        </section>
+
+                        <section id="documentation-filter-panel" class="filter-tab-panel" role="tabpanel" aria-labelledby="filter-tab-documentation" hidden>
+                            <div class="form-grid">
+                                <label for="primary-form-filter-toggle">Primary Form</label>
+                                <div class="multi-select" id="primary-form-filter" data-filter-field="primaryForm">
+                                    <button type="button" class="multi-select-toggle" id="primary-form-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="primary-form-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="primary-form-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="primary-form-filter-toggle" hidden></div>
+                                </div>
+
+                                <label for="request-type-filter-toggle">Request Type</label>
+                                <div class="multi-select" id="request-type-filter" data-filter-field="requestType">
+                                    <button type="button" class="multi-select-toggle" id="request-type-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="request-type-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="request-type-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="request-type-filter-toggle" hidden></div>
+                                </div>
+
+                                <span>Has Web PDF</span>
+                                <label class="switch-row switch-row-inline labeled-switch" for="web-pdf-filter">
+                                    <input type="checkbox" role="switch" id="web-pdf-filter" aria-label="Require Web PDF">
+                                    <span class="switch-control switch-control-labeled" aria-hidden="true">
+                                        <span class="switch-option switch-option-off">Off</span>
+                                        <span class="switch-option switch-option-on">On</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <footer class="filter-panel-footer">
+                    <button id="apply-filters" class="apply-button" type="button">Apply filters <i class="apply-enter-key fa-duotone fa-light fa-arrow-turn-down-left" aria-hidden="true"></i></button>
+                    <!-- <span id="filter-result-count" aria-live="polite">0 results</span> -->
+                    <label class="auto-update-row" for="auto-update-results">
+                        <input type="checkbox" class="styled-checkbox" id="auto-update-results">
+                        <span>Auto-update results <button type="button" class="info-button hover-info-trigger" aria-label="More info about Auto-update results" data-hover-info="Automatically updates results when filters are modified (may cause lag)"><i class="fa-light fa-circle-info" aria-hidden="true"></i></button></span>
+                    </label>
+                </footer>
+            </aside>
+
+            <aside id="side-panel" aria-label="Filtered monument results">
+                <section id="results-view">
+                    <header class="results-header">
+                        <h2><span id="results-count">0</span> filtered results</h2>
+                        <label class="switch-row compact-switch" for="compact-results-toggle">
+                            <input type="checkbox" role="switch" id="compact-results-toggle">
+                            <span class="switch-control" aria-hidden="true"></span>
+                            <span>Compact</span>
+                        </label>
+                        <button id="results-panel-close" class="panel-icon-button" type="button" aria-label="Close filtered results"><i class="fa-regular fa-xmark" aria-hidden="true"></i></button>
+                        <div class="results-header-controls">
+                            <div class="results-header-search">
+                                <label class="visually-hidden" for="results-search">Search results</label>
+                                <input type="search" id="results-search" class="filter-search results-search" placeholder="Search results..." autocomplete="off">
+                            </div>
+                            <div class="results-sort">
+                                <button id="results-sort-toggle" class="results-sort-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="results-sort-menu">
+                                    <span>Sort by</span>
+                                    <span class="results-sort-caret" aria-hidden="true"></span>
+                                </button>
+                                <div id="results-sort-menu" class="results-sort-menu" role="menu" aria-labelledby="results-sort-toggle" hidden>
+                                    <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="true" data-sort-value="best-match">Best match</button>
+                                    <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="name">Name</button>
+                                    <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="state">State/Territory</button>
+                                    <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="city">City</button>
+                                    <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="id">ID number</button>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                    <hr style="margin: 0.5rem 0;">
-                    <section class="filter-section" data-filter-section="supremacy">
-                        <div class="filter-section-header">
-                            <button class="filter-section-toggle" type="button" aria-controls="supremacy-filter-options" aria-expanded="true" aria-label="Collapse Forms of White Supremacy"><i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i></button>
-                            <strong>Forms of White Supremacy <span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about Forms of White Supremacy" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span></strong>
-                        </div>
-                        <div class="filter-section-options" id="supremacy-filter-options">
-                            <label><input type="checkbox" class="supremacy-filter" value="Colonization" checked> Colonization</label>
-                            <label><input type="checkbox" class="supremacy-filter" value="Nation_Building" checked> Nation Building</label>
-                            <label><input type="checkbox" class="supremacy-filter" value="Settler_Colonization" checked> Settler Colonization</label>
-                            <label><input type="checkbox" class="supremacy-filter" value="Slavery" checked> Slavery</label>
-                            <label><input type="checkbox" class="supremacy-filter" value="State_Formation" checked> State Formation</label>
-                            <label><input type="checkbox" class="supremacy-filter" value="Racial_Capitalism" checked> Racial Capitalism</label>
-                            <label><input type="checkbox" class="supremacy-filter" value="None" checked> None</label>
-                        </div>
-                    </section>
-                </div>
-            </div>
-        </div>
+                    </header>
+                    <div id="results-list" class="results-list" aria-live="polite"></div>
+                </section>
 
-        <div id="search-panel">
-            <!-- <label for="monument-search">Search Monuments</label> -->
-            <div class="search-input-wrap">
-                <input type="search" id="monument-search" placeholder="Search by name or Reference ID..." autocomplete="off">
-                <button type="button" id="search-submit" aria-label="Search">
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
-            </div>
-            <div class="search-filter-row">
-                <div class="state-filter-wrap">
-                    <button type="button" id="state-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="state-filter-menu">
-                        <span id="state-filter-label">All states</span>
-                        <i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>
-                    </button>
-                    <div id="state-filter-menu" role="listbox" aria-multiselectable="true" hidden></div>
-                </div>
-                <span id="filter-result-count" aria-live="polite">0 results</span>
-            </div>
-            <div id="search-results" aria-live="polite"></div>
-        </div>
-
-        <!-- Side Panel Template -->
-        <div id="side-panel">
-            <span id="side-panel-close" aria-label="Close"><i class="fa-regular fa-xmark" aria-hidden="true"></i></span>
-            <div class="side-panel-header">
-                <div class="side-panel-header-text">
-                    <h3 id="side-panel-title"></h3>
-                    <div id="side-panel-location" hidden>
-                        <div class="location-line" id="location-line">
-                            <span id="side-panel-city-state"></span>
-                            <span id="address-expand-btn" class="address-expand-icon" hidden aria-hidden="true">
-                                <i class="fa-duotone fa-regular fa-angle-down"></i>
-                            </span>
-                        </div>
-                        <div id="side-panel-address" hidden>
-                            <span class="address-text"></span>
+                <section id="detail-view" hidden>
+                    <button id="detail-back" class="panel-icon-button detail-back" type="button" aria-label="Back to filtered results"><i class="fa-regular fa-arrow-left" aria-hidden="true"></i></button>
+                    <div class="side-panel-header">
+                        <div class="side-panel-header-text">
+                            <h2 id="side-panel-title"></h2>
+                            <div id="side-panel-location" hidden>
+                                <div class="location-line" id="location-line">
+                                    <span id="side-panel-city-state"></span>
+                                    <span id="address-expand-btn" class="address-expand-icon" hidden aria-hidden="true"><i class="fa-duotone fa-regular fa-angle-down"></i></span>
+                                </div>
+                                <div id="side-panel-address" hidden><span class="address-text"></span></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div id="sp-desc">Site description</div>
-        </div>
-    
-        <div id="map"></div>
+                    <div id="sp-desc">Site description</div>
+                </section>
+            </aside>
 
-        <!-- Time Slider for Form Year / Year Designated -->
-        <div id="slider-panel">
-            <div class="year-field-picker">
-                <label class="year-field-picker-label" for="year-field-picker">
-                    <select id="year-field-picker" aria-label="Year field">
-                        <option value="formYear">Form Year</option>
-                        <option value="nhlYear">Year Designated</option>
-                    </select>
-                    <i class="fa-light fa-angles-up-down year-field-picker-icon" aria-hidden="true"></i>
-                </label>
-            </div>
-            <div id="year-slider"></div>
-            <button id="year-reset" type="button">Reset</button>
-        </div>
-
+            <div id="map"></div>
+        </main>
     </body>
 </html>

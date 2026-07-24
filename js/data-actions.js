@@ -1,12 +1,11 @@
-// google sheets link
+// published google sheets CSV
 const LANDMARK_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCUi6tPKsPeZ046QTAQVbSiSGdeLPUvhjxWqdb2NgSWfG7h9F7cbCKKeUcKf8_MpSg0HnEjkx_qgLO/pub?gid=2001268955&single=true&output=csv';
 
-// exact-coordinate duplicates are shifted north so they can be hovered/clicked separately
-const DUPLICATE_COORDINATE_LAT_OFFSET = 0.00009; // kinda arbitrary value that i decided looks best, can be changed
+// later duplicates shift north by their index times this many latitude degrees
+const DUPLICATE_COORDINATE_LAT_OFFSET = 0.00009;
 
 function csvRowsToGeoJSON(rows) {
-    // convert sheets CSV rows to a Point FeatureCollection
-    // duplicate headers: Papa Parse keeps later values (same as Python DictReader)
+    // convert valid sheets rows into point features
     const features = [];
 
     rows.forEach(row => {
@@ -20,7 +19,7 @@ function csvRowsToGeoJSON(rows) {
         delete properties.LAT;
         delete properties.LON;
 
-        // renaming acknowledgement to acknowledged for consistency
+        // normalize the older source header used by some rows
         if (
             Object.prototype.hasOwnProperty.call(properties, 'Acknowledgment') &&
             !Object.prototype.hasOwnProperty.call(properties, 'Acknowledged')
@@ -46,6 +45,7 @@ function csvRowsToGeoJSON(rows) {
 }
 
 function getCoordinates(feature) {
+    // read geometry first while supporting unconverted source records
     const coordinates = feature.geometry?.coordinates;
     if (Array.isArray(coordinates) && coordinates.length >= 2) {
         return [Number(coordinates[0]), Number(coordinates[1])];
@@ -57,13 +57,12 @@ function getCoordinates(feature) {
 }
 
 function coordinateKey(coordinates) {
-    // split the coordinates into a string
+    // stable map key for matching exact longitude latitude pairs
     return coordinates.map(value => String(value)).join(',');
 }
 
 function offsetDuplicateCoordinateFeatures(geojson) {
-    // some monuments have identical coordinates
-    // we create an offset for duplicate coordinates so they can be hovered/clicked separately
+    // keep the first coordinate fixed and stagger later duplicates northward
     const coordinateGroups = new Map();
     geojson.features.forEach(feature => {
         const coordinates = getCoordinates(feature);
@@ -95,7 +94,7 @@ function offsetDuplicateCoordinateFeatures(geojson) {
 }
 
 function assignFeatureIds(geojson) {
-    // Mapbox filters/selection use feature.id
+    // mapbox filters and selection use feature ids
     geojson.features.forEach((feature, index) => {
         feature.id = index;
     });
@@ -103,7 +102,7 @@ function assignFeatureIds(geojson) {
 }
 
 async function loadLandmarkSourceData() {
-    // fetch published google sheets CSV and convert to GeoJSON
+    // fetch the published sheet and prepare mapbox-ready geojson
     const response = await fetch(LANDMARK_SOURCE_URL);
     if (!response.ok) {
         throw new Error(`Could not load landmark source: ${LANDMARK_SOURCE_URL}`);
@@ -112,12 +111,15 @@ async function loadLandmarkSourceData() {
     console.log('Google sheets data loaded successfully');
 
     const csvText = await response.text();
+
     const parsed = Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true
     });
 
     const geojson = csvRowsToGeoJSON(parsed.data);
+
+    // ids and offsets must be assigned before mapbox receives the source
     offsetDuplicateCoordinateFeatures(geojson);
     assignFeatureIds(geojson);
 

@@ -1,13 +1,14 @@
-// set to false to remove dev zoom display
-const SHOW_DEV_ZOOM_DISPLAY = true;
+// set false to hide the development zoom display
+const SHOW_DEV_ZOOM_DISPLAY = false;
 
-// map default zoom/center
+// default map viewport
 const NHL_MAP_HOME = {
     center: [-132.09808, 41.09622],
     zoom: 2.5
 };
 
 function initDevZoomDisplay(map) {
+    // show the live zoom value only during development
     if (!SHOW_DEV_ZOOM_DISPLAY) {
         return;
     }
@@ -27,7 +28,7 @@ function initDevZoomDisplay(map) {
 }
 
 class HomeControl {
-    // control to return to the default zoom/center
+    // mapbox control that restores the default viewport
     onAdd(map) {
         this._map = map;
         this._container = document.createElement('div');
@@ -50,17 +51,20 @@ class HomeControl {
 }
 
 function mapInits() {
+    // create the shared map instance and attach its base controls
     mapboxgl.accessToken = 'pk.eyJ1IjoiaW5mb2dyYXBoaWNzIiwiYSI6ImNqaTR0eHhnODBjeTUzdmx0N3U2dWU5NW8ifQ.fVbTCmIrqILIzv5QGtVJ2Q';
+
     const map = new mapboxgl.Map({
-        style: 'mapbox://styles/infographics/cmlhb3rze006q01sn2k2k5qki', // frank!!!!
+        style: 'mapbox://styles/infographics/cmlhb3rze006q01sn2k2k5qki',
         container: 'map',
         center: NHL_MAP_HOME.center,
         zoom: NHL_MAP_HOME.zoom,
         attributionControl: false,
     });
 
-    // global map instance
+    // shared by filters and map controls outside this module
     window._nhlMapInstance = map;
+
     initDevZoomDisplay(map);
     addMapLayers(map);
 

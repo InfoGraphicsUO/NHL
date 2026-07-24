@@ -1,8 +1,8 @@
 const ALL_POINTS_FILTER = ['==', ['literal', true], true];
 const EMPTY_FILTER = ['==', ['id'], -1];
 
-// zoom symbology for monument points
-const ICON_SIZE_STOPS = [ // [zoom level, icon size]
+// icon sizes at each map zoom stop
+const ICON_SIZE_STOPS = [
     [3, 0.1], 
     [5, 0.28], 
     [8, 0.4], 
@@ -10,10 +10,10 @@ const ICON_SIZE_STOPS = [ // [zoom level, icon size]
     [15, 0.75]
 ];
 
-// selected scale for monument points
+// selected markers are 35 percent larger than regular markers
 const SELECTED_SCALE = 1.35;
 
-// layers for monument points without symbology
+// active point layers when mode symbology is disabled
 const NOSYMBOLOGY_LAYERS = [
     'nosymbologylandmark-shadow',
     'nosymbologylandmark-outline',
@@ -22,7 +22,10 @@ const NOSYMBOLOGY_LAYERS = [
     'nosymbologylandmark-selected'
 ];
 
+// active point layers when mode symbology is enabled
 const SYMBOLOGY_LAYERS = ['landmarks-shadow', 'landmarks-outline', 'landmarks-halo', 'landmarks', 'landmarks-selected'];
+
+// every marker layer that can start or continue a hover interaction
 const LANDMARK_HOVER_LAYERS = [
     'backgroundlandmark',
     'backgroundlandmark-selected',
@@ -32,7 +35,7 @@ const LANDMARK_HOVER_LAYERS = [
     'landmarks-selected'
 ];
 
-// maps the modes of representation to the corresponding icon
+// csv representation flags use string 1 and most specific cases come first
 const LANDMARK_ICON_IMAGE = [
     'case',
     ['all', ['==', ['get', 'Acknowledged'], '1'], ['==', ['get', 'Erasure'], '1'], ['==', ['get', 'Valorization'], '1']], 'eva',
@@ -63,7 +66,7 @@ const LANDMARK_ICON_IMAGE = [
 ];
 
 function iconSizeZoom(scale = 1) {
-    // returns the icon size for the given zoom level
+    // build the mapbox zoom expression and apply an optional scale
     return [
         'interpolate',
         ['linear'],
@@ -73,7 +76,7 @@ function iconSizeZoom(scale = 1) {
 }
 
 function shadowIconLayout() {
-    // this defines the layout of the shadow icon (the shadow is a separate layer)
+    // shadow stays in its own layer below each active marker
     return {
         'icon-image': 'active-shadow',
         'icon-allow-overlap': true,
@@ -86,7 +89,7 @@ function selectedIdFilter(selectedId) {
 }
 
 function setSelectedPointFilters(map) {
-    // sets the filters for the selected point
+    // selected markers use different layers for active and filtered-out points
     const activeFilter = map._activePointFilter || EMPTY_FILTER;
     const idFilter = selectedIdFilter(map._selectedFeatureId);
     const activeSelected = ['all', activeFilter, idFilter];
@@ -110,7 +113,7 @@ function setSelectedPointFilters(map) {
 }
 
 function setLayerVisibility(map, layerIds, visibility) {
-    // sets the visibility for the given layers
+    // update only layers that are available after map load
     layerIds.forEach(layerId => {
         if (map.getLayer(layerId)) {
             map.setLayoutProperty(layerId, 'visibility', visibility);
@@ -119,7 +122,7 @@ function setLayerVisibility(map, layerIds, visibility) {
 }
 
 function setActivePointFilters(map, filterExpr) {
-    // sets the active point filters
+    // keep active and background layers in sync with the current filter
     const activeFilter = filterExpr || EMPTY_FILTER;
     map._activePointFilter = activeFilter;
 
@@ -137,18 +140,19 @@ function setActivePointFilters(map, filterExpr) {
 }
 
 function togglemodeSymbology(animateColors = false) {
-    // toggles the color of the mode symbology
+    // switch between generic and mode-specific marker families
     const isEnabled = document.getElementById("modeSymbologySwitch").checked;
     const map = window._nhlMapInstance;
     const filterContent = document.getElementById('filter-content');
 
+    // shared UI state used by controls outside the map module
     window.modeSymbologyEnabled = isEnabled;
 
     if (animateColors && filterContent) {
         const transitionMs = getCssDurationMs('--filter-color-transition-duration', 200);
 
         filterContent.classList.add('symbology-colors-changing');
-        // force the transition class to apply before changing the checkbox color variables
+        // force layout before changing checkbox color variables
         filterContent.offsetWidth;
         window.clearTimeout(filterContent._symbologyColorTimer);
         filterContent._symbologyColorTimer = window.setTimeout(() => {
@@ -174,7 +178,7 @@ function togglemodeSymbology(animateColors = false) {
 }
 
 function filterBasemapLabelsToUS(map) {
-    // we filter out all basemap labels that aren't in the US
+    // retain united states labels while preserving each existing layer filter
     const usIsoFilter = [
         "any",
         ["==", ["get", "iso_3166_1"], "US"],
@@ -196,6 +200,7 @@ function filterBasemapLabelsToUS(map) {
 }
 
 function addMapIcon(map, id, url) {
+    // load image assets before layers reference their ids
     const image = new Image();
     image.onload = () => {
         if (!map.hasImage(id)) {
@@ -209,8 +214,7 @@ function addMapIcon(map, id, url) {
 }
 
 function setupLandmarkHover(map, landmarkLayers) {
-    // this func sets up the landmark hover functionality that ensures
-    // only one landmark is hovered at a time and that the hover info box is displayed correctly
+    // show one hover card while the pointer remains on any marker layer
     const hoverInfoBox = createHoverInfoBox({ offsetY: -12 });
     const mapCanvas = map.getCanvas();
     let hoverMoveListenerActive = false;
@@ -237,12 +241,12 @@ function setupLandmarkHover(map, landmarkLayers) {
 
     const updateLandmarkHoverContent = (feature) => {
         if (!feature || feature.id === activeHoverFeatureId) {
-            //if the feature is the same as the active hover feature, do nothing
+            // avoid rebuilding the card when moving within the same marker
             return;
         }
 
         const props = feature.properties || {};
-        // display the hover info box with the feature's properties
+        // use source properties because every marker layer shares the same data
         hoverInfoBox.show({
             header: props.Historic_Name,
             infoText: "Form year: " + (props["Form Year"] || 'Unknown')
@@ -251,7 +255,7 @@ function setupLandmarkHover(map, landmarkLayers) {
     };
 
     const renderedLandmarkFeatureAtPoint = (point) => {
-        // get the feature at the given point
+        // topmost rendered marker wins when layers overlap
         if (!point) {
             return null;
         }
@@ -261,41 +265,33 @@ function setupLandmarkHover(map, landmarkLayers) {
     };
 
     const onHoverMove = (e) => {
-        // get the position of the pointer
         const position = getPointerPosition(e);
-        // set the position of the hover info box
+
         hoverInfoBox.setPosition(position.clientX, position.clientY);
-        // update the hover content with the feature at the given point
         updateLandmarkHoverContent(renderedLandmarkFeatureAtPoint(e.point));
     };
 
     const startHoverMoveListener = () => {
-        // if the hover move listener is already active, do nothing
         if (hoverMoveListenerActive) {
             return;
         }
 
-        // add the mousemove listener to the map
         map.on('mousemove', onHoverMove);
         hoverMoveListenerActive = true;
     };
 
     const stopHoverMoveListener = () => {
-        // if the hover move listener is not active, do nothing
         if (!hoverMoveListenerActive) {
             return;
         }
 
-        // remove the mousemove listener from the map
         map.off('mousemove', onHoverMove);
         hoverMoveListenerActive = false;
     };
 
     const clearLandmarkHover = () => {
         mapCanvas.style.cursor = '';
-        // hide the hover info box
         hoverInfoBox.hide();
-        // reset the active hover feature id
         activeHoverFeatureId = null;
         stopHoverMoveListener();
         stopHoverBoundaryListener();
@@ -303,36 +299,31 @@ function setupLandmarkHover(map, landmarkLayers) {
 
     const onDocumentPointerMove = (e) => {
         if (e.target !== mapCanvas) {
-            // if the pointer is not over the map canvas, clear the landmark hover
+            // mapbox does not always emit leave events for overlapping layers
             clearLandmarkHover();
         }
     };
 
     function startHoverBoundaryListener() {
-        // if the hover boundary listener is already active, do nothing
         if (hoverBoundaryListenerActive) {
             return;
         }
 
-        // add the pointermove listener to the document
         document.addEventListener('pointermove', onDocumentPointerMove, true);
         hoverBoundaryListenerActive = true;
     }
 
     function stopHoverBoundaryListener() {
-        // if the hover boundary listener is not active, do nothing
         if (!hoverBoundaryListenerActive) {
             return;
         }
 
-        // remove the pointermove listener from the document
         document.removeEventListener('pointermove', onDocumentPointerMove, true);
         hoverBoundaryListenerActive = false;
     }
 
     const showLandmarkHover = (e) => {
         mapCanvas.style.cursor = 'pointer';
-        // update the hover content with the feature at the given point
         updateLandmarkHoverContent(getEventFeature(e));
 
         const position = getPointerPosition(e);
@@ -350,14 +341,12 @@ function setupLandmarkHover(map, landmarkLayers) {
     };
 
     landmarkLayers.forEach(layerId => {
-        // add the mouseenter interaction to the map
         map.addInteraction(`places-mouseenter-${layerId}`, {
             type: 'mouseenter',
             target: { layerId },
             handler: showLandmarkHover
         });
 
-        // add the mouseleave interaction to the map
         map.addInteraction(`places-mouseleave-${layerId}`, {
             type: 'mouseleave',
             target: { layerId },
@@ -367,17 +356,19 @@ function setupLandmarkHover(map, landmarkLayers) {
 }
 
 function addMapLayers(map) {
+    // load source data then build stacked marker layers for state and selection
     map.on('load', async () => {
         filterBasemapLabelsToUS(map);
         const landmarkSourceData = await loadLandmarkSourceData();
         map._landmarkSourceData = landmarkSourceData;
 
+        // source data is loaded once and reused by every marker layer
         map.addSource('landmark-point-data', {
             type: 'geojson',
             data: landmarkSourceData
         });
     
-        // define icons
+        // source icons are shared by the generic and symbology layer families
         const icons = {
             'a': 'img/A.svg',
             'ae': 'img/AE.svg',
@@ -403,7 +394,7 @@ function addMapLayers(map) {
             addMapIcon(map, id, url);
         });
 
-        // inactive monument points shown with generic icon
+        // background layers keep filtered-out points visible and selectable
         map.addLayer({
             id: 'backgroundlandmark',
             type: 'symbol',
@@ -416,7 +407,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // selection halo for inactive monument points
+        // filtered-out selection layers sit above the background marker
         map.addLayer({
             id: 'backgroundlandmark-halo',
             type: 'symbol',
@@ -429,7 +420,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // enlarged generic icon for selected inactive monument points
         map.addLayer({
             id: 'backgroundlandmark-selected',
             type: 'symbol',
@@ -442,7 +432,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // selection outline for inactive monument points
         map.addLayer({
             id: 'backgroundlandmark-outline',
             type: 'symbol',
@@ -455,7 +444,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // drop shadow for active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-shadow',
             type: 'symbol',
@@ -464,7 +452,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // active monument points without symbology icons
         map.addLayer({
             id: 'nosymbologylandmark',
             type: 'symbol',
@@ -477,7 +464,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // selection halo for active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-halo',
             type: 'symbol',
@@ -490,7 +476,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // enlarged icon for selected active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-selected',
             type: 'symbol',
@@ -503,7 +488,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // selection outline for active monument points without symbology
         map.addLayer({
             id: 'nosymbologylandmark-outline',
             type: 'symbol',
@@ -516,7 +500,7 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // drop shadow for active monument points with symbology
+        // symbology layers mirror generic layers but use mode-derived icons
         map.addLayer({
             id: 'landmarks-shadow',
             type: 'symbol',
@@ -528,7 +512,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // active monument points with symbology icons
         map.addLayer({
             id: 'landmarks',
             type: 'symbol',
@@ -542,7 +525,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // selection halo for active monument points with symbology
         map.addLayer({
             id: 'landmarks-halo',
             type: 'symbol',
@@ -556,7 +538,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // enlarged icon for selected active monument points with symbology
         map.addLayer({
             id: 'landmarks-selected',
             type: 'symbol',
@@ -570,7 +551,6 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
-        // selection outline for active monument points with symbology
         map.addLayer({
             id: 'landmarks-outline',
             type: 'symbol',
@@ -584,12 +564,13 @@ function addMapLayers(map) {
             filter: EMPTY_FILTER
         });
 
+        // start with every feature active before the filter panel initializes
         setActivePointFilters(map, ALL_POINTS_FILTER);
         togglemodeSymbology();
     
     });
 
-    // track the current selected feature/site
+    // filters keep this value highlighted across every marker family
     map._selectedFeatureId = null;
 
     setupLandmarkHover(map, LANDMARK_HOVER_LAYERS);

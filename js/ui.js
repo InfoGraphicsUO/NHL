@@ -1,18 +1,5 @@
 
-const NoneCondition = ["all",
-    ["!=", ["coalesce", ["get", "Acknowledged"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Multiculturalism"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Valorization"], '0'], '1'], 
-    ["!=", ["coalesce", ["get", "Erasure"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Colonization"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Nation_Building"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Settler_Colonization"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Slavery"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "State_Formation"], '0'], '1'],
-    ["!=", ["coalesce", ["get", "Racial_Capitalism"], '0'], '1']
-];
-
-// flyTo on point select only when current zoom is below this level
+// only recenter selected points when the map is still at a broad view
 const FLY_TO_MAX_ZOOM = 7;
 
 $(document).ready(function() {
@@ -21,73 +8,7 @@ $(document).ready(function() {
     updateSidePanelVisibility();
 });
 
-function getSelectedSupremacyForms() {
-    return Array.from(document.querySelectorAll('.supremacy-filter:checked')).map(cb => cb.value);
-}
-
-function getSelectedModes() {
-    return Array.from(document.querySelectorAll('.mode-filter:checked')).map(cb => cb.value);
-}
-
-function updateFilterResultCount(count) {
-    const resultCount = document.getElementById('filter-result-count');
-    if (!resultCount) return;
-    resultCount.textContent = `${count} ${count === 1 ? 'result' : 'results'}`;
-}
-
-function featureHasNoneCategories(props) {
-    return [
-        'Acknowledged', 'Multiculturalism', 'Valorization', 'Erasure',
-        'Colonization', 'Nation_Building', 'Settler_Colonization',
-        'Slavery', 'State_Formation', 'Racial_Capitalism'
-    ].every(field => props[field] !== '1');
-}
-
-function featureMatchesGroupFilter(props, selected, noneSelected) {
-    if (selected.length === 0) return false;
-    if (noneSelected && featureHasNoneCategories(props)) return true;
-    return selected.some(value => value !== 'None' && props[value] === '1');
-}
-
-function countFilteredFeatures(map, filterOptions) {
-    const features = map._landmarkSourceData?.features || [];
-    const {
-        minYear,
-        maxYear,
-        yearField,
-        supremacy,
-        modes,
-        states,
-        isFullYearRange,
-        isNoneSelected,
-        isFOWSNoneSelected
-    } = filterOptions;
-
-    return features.reduce((count, feature) => {
-        const props = feature.properties || {};
-
-        if (!isFullYearRange) {
-            const rawYear = props[yearField.property];
-            if (yearField.excludeMultiple && rawYear === 'Multiple') return count;
-            const year = Number(rawYear);
-            if (!Number.isFinite(year) || year < minYear || year > maxYear) return count;
-        }
-
-        if (supremacy.length > 0 && !featureMatchesGroupFilter(props, supremacy, isFOWSNoneSelected)) {
-            return count;
-        }
-        if (!featureMatchesGroupFilter(props, modes, isNoneSelected)) {
-            return count;
-        }
-        if (states.length > 0) {
-            const state = String(props.State || '').trim();
-            if (!states.includes(state)) return count;
-        }
-
-        return count + 1;
-    }, 0);
-}
-
+// builds the compact location line shown in landmark details
 function formatCityState(props) {
     const city = (props.City || '').trim();
     const state = (props.State || '').trim();
@@ -95,11 +16,13 @@ function formatCityState(props) {
     return city || state || '';
 }
 
+// hides placeholder addresses that are not useful to visitors
 function hasUsableAddress(address) {
     const value = (address || '').trim();
     return value.length > 0 && !/^address restricted$/i.test(value);
 }
 
+// reads a css duration and converts seconds to milliseconds for settimeout
 function getCssDurationMs(variableName, fallbackMs) {
     const value = getComputedStyle(document.documentElement)
         .getPropertyValue(variableName)
@@ -111,6 +34,7 @@ function getCssDurationMs(variableName, fallbackMs) {
     return Number.isFinite(parsed) ? parsed : fallbackMs;
 }
 
+// briefly shows the copied confirmation beside a reference id
 function showCopyFeedback(button) {
     const feedback = button.parentElement.querySelector('.copy-feedback');
     if (!feedback) return;
@@ -130,8 +54,9 @@ function showCopyFeedback(button) {
     }, 1500);
 }
 
+// accepts only usable external links from the web pdf column
 function isValidWebPdfUrl(value) {
-    // some strings in web pdf col are just text notes and not urls
+    // some web pdf values are notes instead of urls
     try {
         const url = new URL(String(value).trim());
         return url.protocol === 'http:' || url.protocol === 'https:';
@@ -140,9 +65,10 @@ function isValidWebPdfUrl(value) {
     }
 }
 
+// finds the representation modes enabled on a landmark
 function getActiveModesFromProps(props) {
     const modeFilters = Array.from(document.querySelectorAll('.mode-filter'));
-    const activeModes = modeFilters 
+    const activeModes = modeFilters
         .filter(({ value }) => value !== 'None' && props[value] === '1')
         .map(checkbox => ({
             key: checkbox.value,
@@ -160,8 +86,8 @@ function getActiveModesFromProps(props) {
     }];
 }
 
+// returns the representation pills used in the detail panel
 function renderModePillsHtml(modes) {
-    // renders the 'pills' for modes of representation in the side panel
     const pills = modes.map(({ key, label }) =>
         `<span class="mode-pill" data-mode="${key}">${label}</span>`
     ).join('');
@@ -173,6 +99,7 @@ function renderHoverInfoIconHtml(label) {
     return `<span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about ${label}" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span>`;
 }
 
+// wires mouse and keyboard events to one shared hover tooltip
 function setupHoverInfoIcons(root = document) {
     if (typeof createHoverInfoBox !== 'function') return;
 
@@ -180,16 +107,18 @@ function setupHoverInfoIcons(root = document) {
     setupHoverInfoIcons._infoBox = infoBox;
 
     root.querySelectorAll('.hover-info-trigger').forEach(trigger => {
-        if (trigger._hoverInfoInitialized) return; // only initialize once per trigger
+        // avoid duplicate listeners when a detail panel rerenders
+        if (trigger._hoverInfoInitialized) return;
         trigger._hoverInfoInitialized = true;
 
         const showInfo = (event) => {
-            infoBox.show({ infoLines: [trigger.dataset.hoverInfo || 'Placeholder text'] }); //display placeholder if no info is provided
+            infoBox.show({ infoLines: [trigger.dataset.hoverInfo || 'Placeholder text'] });
+
             if (event?.clientX && event?.clientY) {
-                // position the info box relative to the mouse cursor
+                // pointer events keep the tooltip beside the cursor
                 infoBox.setPosition(event.clientX, event.clientY);
             } else {
-                // position the info box relative to the trigger
+                // keyboard focus anchors the tooltip to its trigger
                 const rect = trigger.getBoundingClientRect();
                 infoBox.setPosition(rect.left + rect.width / 2, rect.top);
             }
@@ -205,16 +134,18 @@ function setupHoverInfoIcons(root = document) {
     });
 }
 
+// connects map selection events to the shared results and detail panel
 function setupUI() {
-    const yearSlider = setupYearSliderPanel();
-    if (!yearSlider) {
+    const map = window._nhlMapInstance;
+    if (!map) {
+        console.warn('Map instance not found');
         return;
     }
-
-    // map instance and ui elements
-    const map = window._nhlMapInstance;
-    const filterToggle = document.getElementById('filter-toggle');
+    // cache the shared shell elements used during selection changes
     const sidePanel = document.getElementById('side-panel');
+    const resultsView = document.getElementById('results-view');
+    const detailView = document.getElementById('detail-view');
+    const detailBack = document.getElementById('detail-back');
     const spTitle = document.getElementById('side-panel-title');
     const spLocation = document.getElementById('side-panel-location');
     const spCityState = document.getElementById('side-panel-city-state');
@@ -225,97 +156,9 @@ function setupUI() {
     const spClose = document.getElementById('side-panel-close');
     setupHoverInfoIcons(document);
 
-    function filterAll() {
-        const src = map.getSource('landmark-point-data');
-        if (!src) {
-            console.warn('GeoJSON source not found');
-            return;
-        }
-
-        // get current filter values
-        const [minYear, maxYear] = getYearSliderRange(yearSlider);
-        const yearField = getCurrentYearField();
-        const supremacy = getSelectedSupremacyForms();
-        const modes = getSelectedModes();
-        const states = typeof getSelectedStates === 'function' ? getSelectedStates() : [];
-        const isFullYearRange = isFullYearSliderRange(yearSlider);
-        // "None" selection
-        const isNoneSelected = modes.includes("None");
-        const isFOWSNoneSelected = supremacy.includes("None");
-        let filterExpr = ["all"];
-        if (!isFullYearRange) {
-            if (yearField.excludeMultiple) {
-                filterExpr.push(["!=", ["get", yearField.property], "Multiple"]);
-            }
-            // year filter
-            filterExpr.push([
-                "all",
-                [">=", ["to-number", ["get", yearField.property]], minYear],
-                ["<=", ["to-number", ["get", yearField.property]], maxYear]
-            ]);
-        }
-
-        // supremacy filter
-        if (supremacy.length > 0) {
-            let supremacyExpr = ["any"];
-            supremacy.forEach(s => {
-                if (s !== "None") {
-                    supremacyExpr.push(["==", ["get", s], "1"]);
-                }
-            });
-            if (isFOWSNoneSelected) {
-                supremacyExpr.push(NoneCondition);
-            }
-            filterExpr.push(supremacyExpr);
-        }
-
-        // modes filter
-        if (modes.length > 0) {
-            let modesExpr = ["any"];
-            modes.forEach(m => {
-                if (m !== "None") {
-                    modesExpr.push(["==", ["get", m], "1"]);
-                }
-            });
-            if (isNoneSelected) {
-                modesExpr.push(NoneCondition);
-            }
-            filterExpr.push(modesExpr);
-        } else {
-            filterExpr.push(["==", ["literal", true], false]);
-        }
-
-        // US state filter (multi-select; empty = all states)
-        if (states.length > 0) {
-            filterExpr.push(["in", ["get", "State"], ["literal", states]]);
-        }
-
-        if (typeof setActivePointFilters === 'function') {
-            // if the function is defined, use it to set the active point filters
-            setActivePointFilters(map, filterExpr);
-        } else {
-            // if the function is not defined, use the default filter
-            map.setFilter('landmarks', filterExpr);
-            if (map.getLayer('nosymbologylandmark')) {
-                map.setFilter('nosymbologylandmark', filterExpr);
-            }
-        }
-
-        updateFilterResultCount(countFilteredFeatures(map, {
-            minYear,
-            maxYear,
-            yearField,
-            supremacy,
-            modes,
-            states,
-            isFullYearRange,
-            isNoneSelected,
-            isFOWSNoneSelected
-        }));
-    }
-
     let sidePanelSwitchToken = 0;
 
+    // fills landmark metadata and resets address disclosure state
     function fillSidePanelContent(props) {
         if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
         const cityState = formatCityState(props);
@@ -327,6 +170,7 @@ function setupUI() {
             spCityState.textContent = cityState;
         }
 
+        // only make the location row interactive for real addresses
         if (addressExpandBtn && spAddress && locationLine) {
             addressExpandBtn.hidden = !canShowAddress;
             addressExpandBtn.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down"></i>';
@@ -371,6 +215,7 @@ function setupUI() {
             addressText.textContent = canShowAddress ? address : '';
         }
 
+        // rebuild details so each selection uses current landmark properties
         const spDesc = document.getElementById('sp-desc');
         if (spDesc) {
             const refId = props.ReferenceID || 'Unknown';
@@ -426,8 +271,10 @@ function setupUI() {
         updateSidePanelVisibility();
     }
 
+    // selects one map feature and opens its detail view
     function selectLandmark(feature) {
-        // select the landmark and update the map and side panel
+        if (!feature?.properties || !feature?.geometry?.coordinates) return;
+
         const props = feature.properties;
         const coordinates = feature.geometry.coordinates.slice();
         const mapInstance = window._nhlMapInstance;
@@ -441,6 +288,17 @@ function setupUI() {
             setSelectedPointFilters(mapInstance);
         }
 
+        // the filter controller owns the shared results and detail shell
+        const filterController = window._nhlFilterPanelController || window._filterPanelController;
+        if (typeof filterController?.showDetail === 'function') {
+            filterController.showDetail(feature);
+        } else {
+            if (resultsView) resultsView.hidden = true;
+            if (detailView) detailView.hidden = false;
+            sidePanel?.classList.add('is-open');
+        }
+
+        // preserve a close view while helping users orient from a wide view
         if (map.getZoom() < FLY_TO_MAX_ZOOM) {
             map.flyTo({
                 center: coordinates,
@@ -450,6 +308,7 @@ function setupUI() {
 
         const switchToken = ++sidePanelSwitchToken;
 
+        // wait for the outgoing content fade before replacing it
         if (isContentSwitch) {
             sidePanel.classList.add('is-switching');
             setTimeout(() => {
@@ -467,46 +326,37 @@ function setupUI() {
         fillSidePanelContent(props);
     }
 
-    function onSourceReady() {
-        setupSearchPanel(map, selectLandmark, filterAll);
+    // clears map selection and returns the shared shell to results
+    function clearLandmarkSelection({ restoreResults = true } = {}) {
+        sidePanelSwitchToken += 1;
+        map._selectedFeatureId = null;
+        if (typeof setSelectedPointFilters === 'function') {
+            setSelectedPointFilters(map);
+        }
 
-        onYearSliderUpdate(yearSlider, function() {
-            filterAll();
-        });
-
-        // modes of rep switch function
-        document.querySelectorAll('.supremacy-filter, .mode-filter').forEach(cb => {
-            cb.addEventListener('change', filterAll);
-            let label = cb.closest('label');
-            if (!label) {
-                if (cb.id) {
-                    label = document.querySelector('label[for="' + cb.id + '"]');
-                }
-            }
-            const rightClickHandler = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const checkbox = cb;
-                const groupClass = checkbox.classList.contains('supremacy-filter') ? 'supremacy-filter' : 'mode-filter';
-                const groupBoxes = Array.from(document.querySelectorAll('.' + groupClass));
-                const onlyThisChecked = groupBoxes.every(box => (box === checkbox ? box.checked : !box.checked));
-                if (onlyThisChecked) {
-                    groupBoxes.forEach(box => { box.checked = true; });
-                } else {
-                    groupBoxes.forEach(box => { box.checked = (box === checkbox); });
-                }
-                filterAll();
-            };
-            cb.addEventListener('contextmenu', rightClickHandler);
-            if (label) {
-                label.addEventListener('contextmenu', function(e) {
-                    rightClickHandler(e);
-                });
-            }
-        });
-        filterAll();
+        sidePanel?.classList.remove('is-switching');
+        if (detailView) detailView.hidden = true;
+        if (restoreResults && resultsView) resultsView.hidden = false;
+        if (restoreResults) sidePanel?.classList.add('is-open');
+        updateSidePanelVisibility();
     }
 
+    // starts filtering only after the map source is available
+    function onSourceReady() {
+        if (typeof window.setupFilterPanel !== 'function') {
+            console.warn('Filter panel controller not found');
+            return;
+        }
+
+        // filtering owns draft and applied state while ui owns landmark selection
+        window._filterPanelController = window.setupFilterPanel({
+            map,
+            onSelectLandmark: selectLandmark,
+            onClearSelection: clearLandmarkSelection
+        });
+    }
+
+    // source data can arrive after the map style has already loaded
     if (map.isStyleLoaded() && map.getSource('landmark-point-data')) {
         onSourceReady();
     } else {
@@ -518,112 +368,9 @@ function setupUI() {
         });
     }
 
-    // filter section collapse toggles
-    const filterSections = [];
-
-    const syncFilterToggle = () => {
-        // syncs both individual section toggles + the main large toggle
-        if (!filterToggle) return;
-        const allCollapsed = filterSections.length > 0 && filterSections.every(({ section }) => section.classList.contains('is-collapsed'));
-        const expanded = !allCollapsed;
-        filterToggle.setAttribute('aria-expanded', String(expanded));
-        filterToggle.setAttribute('aria-label', expanded ? 'Collapse filters' : 'Expand filters');
-        filterToggle.innerHTML = expanded
-            ? '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>'
-            : '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>';
-    };
-
-    document.querySelectorAll('.filter-section').forEach(section => {
-        // for each filter section, add a toggle to collapse/expand the section
-        const sectionToggle = section.querySelector('.filter-section-toggle');
-        const sectionOptions = section.querySelector('.filter-section-options');
-        if (!sectionToggle || !sectionOptions) return;
-
-        let sectionAnimating = false; // prevents multiple animations from happening at once
-        const sectionLabel = sectionToggle.getAttribute('aria-label')?.replace(/^Collapse\s+|^Expand\s+/, '') || 'section';
-
-        const setSectionExpanded = (expanded) => {
-            if (sectionAnimating || section.classList.contains('is-collapsed') === !expanded) {
-                if (!sectionAnimating) syncFilterToggle();
-                return;
-            }
-            sectionAnimating = true;
-            const transitionMs = getCssDurationMs('--filter-collapse-duration', 200);
-            let completionTimer;
-
-            const onTransitionEnd = (event) => {
-                if (event.target !== sectionOptions || event.propertyName !== 'height') return;
-                finish();
-            };
-
-            const finish = () => {
-                window.clearTimeout(completionTimer);
-                sectionOptions.removeEventListener('transitionend', onTransitionEnd);
-                if (expanded) {
-                    sectionOptions.style.height = 'auto';
-                }
-                sectionAnimating = false;
-            };
-
-            sectionOptions.addEventListener('transitionend', onTransitionEnd);
-            sectionToggle.setAttribute('aria-expanded', String(expanded));
-            sectionToggle.setAttribute('aria-label', `${expanded ? 'Collapse' : 'Expand'} ${sectionLabel}`);
-
-            if (expanded) {
-                // if expanded, remove the collapsed class and set the height to the scroll height
-                section.classList.remove('is-collapsed');
-                sectionOptions.style.height = '0px';
-                sectionOptions.offsetHeight;
-                sectionOptions.style.height = `${sectionOptions.scrollHeight}px`;
-                sectionToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-up" aria-hidden="true"></i>';
-            } else {
-                // if collapsed, set the height to the scroll height and then set it to 0
-                sectionOptions.style.height = `${sectionOptions.scrollHeight}px`;
-                sectionOptions.offsetHeight;
-                section.classList.add('is-collapsed'); 
-                sectionOptions.style.height = '0px'; 
-                sectionToggle.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down" aria-hidden="true"></i>'; // update the toggle icon
-            }
-
-            syncFilterToggle(); // sync the main large toggle
-
-            if (transitionMs === 0) {
-                finish();
-            } else {
-                completionTimer = window.setTimeout(finish, transitionMs + 50);
-            }
-        };
-
-        filterSections.push({ section, setSectionExpanded });
-
-        const sectionHeader = section.querySelector('.filter-section-header');
-        if (!sectionHeader) return;
-
-        sectionHeader.addEventListener('click', (event) => {
-            // keep the info icon from collapsing the section
-            if (event.target.closest('.hover-info-trigger')) return;
-            setSectionExpanded(section.classList.contains('is-collapsed'));
-        });
-    });
-
-    if (filterToggle) {
-        filterToggle.addEventListener('click', () => {
-            const allCollapsed = filterSections.every(({ section }) => section.classList.contains('is-collapsed'));
-            filterSections.forEach(({ setSectionExpanded }) => setSectionExpanded(allCollapsed));
-        });
-    }
-
-    if (spClose && sidePanel) {
-        spClose.addEventListener('click', () => {
-            const mapInstance = window._nhlMapInstance;
-            if (mapInstance && mapInstance._selectedFeatureId !== null) {
-                mapInstance._selectedFeatureId = null;
-                if (typeof setSelectedPointFilters === 'function') {
-                    setSelectedPointFilters(mapInstance);
-                }
-            }
-            updateSidePanelVisibility();
-        });
+    // keep legacy markup functional while the shared detail back button rolls out
+    if (spClose && spClose !== detailBack && !detailBack) {
+        spClose.addEventListener('click', () => clearLandmarkSelection());
     }
 
     window.addEventListener('resize', () => {
@@ -641,6 +388,7 @@ function setupUI() {
     map.on('click', 'landmarks-selected', handleLandmarkClick);
 }
 
+// flags titles that wrap so the detail header can adjust its spacing
 function updateSidePanelHeaderMargin() {
     const title = document.getElementById('side-panel-title');
     const header = title?.closest('.side-panel-header');
@@ -657,16 +405,27 @@ function updateSidePanelHeaderMargin() {
     header.classList.toggle('multiline', range.getClientRects().length > 1);
 }
 
+// keeps the side panel aligned with selected feature and results state
 function updateSidePanelVisibility() {
-    // prevents empty side panel on refresh
     const sidePanel = document.getElementById('side-panel');
+    const resultsView = document.getElementById('results-view');
+    const detailView = document.getElementById('detail-view');
     const mapInstance = window._nhlMapInstance;
-    if (sidePanel) {
-        if (mapInstance && mapInstance._selectedFeatureId != null) {
-            sidePanel.classList.add('is-open');
-            requestAnimationFrame(updateSidePanelHeaderMargin);
-        } else {
-            sidePanel.classList.remove('is-open', 'is-switching');
-        }
+    if (!sidePanel) return;
+
+    if (mapInstance && mapInstance._selectedFeatureId != null) {
+        sidePanel.classList.add('is-open');
+        if (resultsView) resultsView.hidden = true;
+        if (detailView) detailView.hidden = false;
+        requestAnimationFrame(updateSidePanelHeaderMargin);
+        return;
+    }
+
+    sidePanel.classList.remove('is-switching');
+    if (detailView) detailView.hidden = true;
+
+    // the filter controller owns panel visibility when the shared results shell exists
+    if (!resultsView) {
+        sidePanel.classList.remove('is-open');
     }
 }

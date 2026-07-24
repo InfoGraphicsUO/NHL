@@ -1,19 +1,19 @@
-// hover info box is our custom tooltip
-// two main fields: header and info text
-
+// creates one reusable tooltip that can follow pointer or keyboard focus
 function createHoverInfoBox(options = {}) {
-    const offsetX = options.offsetX ?? 0; // in pixels
-    const offsetY = options.offsetY ?? -12; // in pixels
-    const viewportPadding = options.viewportPadding ?? 8; // in pixels
-    const container = options.container || document.body; // DOM element
+    // offsets and viewport padding use css pixels
+    const offsetX = options.offsetX ?? 0;
+    const offsetY = options.offsetY ?? -12;
+    const viewportPadding = options.viewportPadding ?? 8;
+    const container = options.container || document.body;
 
     const element = document.createElement('div');
     element.className = 'hover-info-box';
     element.hidden = true;
     element.setAttribute('role', 'tooltip');
-    container.appendChild(element); // append to body by default
+    container.appendChild(element);
     let hideTimer;
 
+    // adds a text row only when the caller supplied content
     function appendTextBlock(className, text) {
         if (text === undefined || text === null || text === '') {
             return;
@@ -25,12 +25,13 @@ function createHoverInfoBox(options = {}) {
         element.appendChild(block);
     }
 
+    // centers the tooltip above its target without letting it leave the viewport
     function setPosition(clientX, clientY) {
         if (element.hidden) {
             return;
         }
 
-        const box = element.getBoundingClientRect(); // get the bounding client rect of the element
+        const box = element.getBoundingClientRect();
         const maxLeft = window.innerWidth - box.width - viewportPadding;
         const maxTop = window.innerHeight - box.height - viewportPadding;
         const targetLeft = clientX + offsetX - box.width / 2;
@@ -38,18 +39,18 @@ function createHoverInfoBox(options = {}) {
         const clampedLeft = Math.min(Math.max(targetLeft, viewportPadding), Math.max(maxLeft, viewportPadding));
         const clampedTop = Math.min(Math.max(targetTop, viewportPadding), Math.max(maxTop, viewportPadding));
 
-        element.style.left = `${clampedLeft}px`; // set the left position of the element
-        element.style.top = `${clampedTop}px`; // set the top position of the element
+        element.style.left = `${clampedLeft}px`;
+        element.style.top = `${clampedTop}px`;
     }
 
     return {
         show({ header, infoText, infoLines } = {}) {
             clearTimeout(hideTimer);
-            element.replaceChildren(); // clear any existing content
-            appendTextBlock('hover-info-box__header', header); // add header text
+            element.replaceChildren();
+            appendTextBlock('hover-info-box__header', header);
 
             if (Array.isArray(infoLines)) {
-                infoLines.forEach(line => appendTextBlock('hover-info-box__info', line)); // add info lines
+                infoLines.forEach(line => appendTextBlock('hover-info-box__info', line));
             } else {
                 appendTextBlock('hover-info-box__info', infoText);
             }
@@ -60,6 +61,8 @@ function createHoverInfoBox(options = {}) {
         hide() {
             clearTimeout(hideTimer);
             element.classList.remove('is-visible');
+
+            // keep this 100 ms delay aligned with the css tooltip fade duration
             hideTimer = setTimeout(() => {
                 if (!element.classList.contains('is-visible')) {
                     element.hidden = true;
