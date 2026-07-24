@@ -1,3 +1,10 @@
+/* Animate results chrome alpha via a typed custom property (not element opacity). */
+@property --results-chrome-opacity {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 1;
+}
+
 #side-panel {
     position: absolute;
     top: 1.25rem;
@@ -26,6 +33,35 @@
 
 #side-panel.showing-results {
     max-height: 70vh;
+    --results-chrome-opacity: 1;
+    --results-chrome-dim-duration: 300ms;
+    --results-chrome-restore-duration: 120ms;
+    border-color: rgba(0, 0, 0, calc(0.08 * var(--results-chrome-opacity)));
+    background: rgba(255, 255, 255, var(--results-chrome-opacity));
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, calc(0.15 * var(--results-chrome-opacity)));
+    /* Open/close only here. Do not transition --results-chrome-opacity on this
+       rule: Chromium leaves the @property stuck at 0.5 after idle is removed.
+       Dim animates via the idle rule; restore is force-restarted in JS. */
+    transition:
+        opacity var(--side-panel-content-fade-duration) ease,
+        visibility var(--side-panel-content-fade-duration) ease;
+}
+
+@media (hover: hover) {
+    #side-panel.showing-results.is-results-idle {
+        --results-chrome-opacity: 0.5;
+        transition:
+            opacity var(--side-panel-content-fade-duration) ease,
+            visibility var(--side-panel-content-fade-duration) ease,
+            --results-chrome-opacity var(--results-chrome-dim-duration) ease;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #side-panel.showing-results {
+        --results-chrome-dim-duration: 0ms;
+        --results-chrome-restore-duration: 0ms;
+    }
 }
 
 #results-view,
@@ -55,8 +91,8 @@
     position: relative;
     z-index: 1;
     box-sizing: border-box;
-    border-bottom: 1px solid #c6c6c6;
-    background: #fff;
+    border-bottom: 1px solid rgba(198, 198, 198, var(--results-chrome-opacity, 1));
+    background: rgba(255, 255, 255, var(--results-chrome-opacity, 1));
     padding: 0.7rem 0.85rem 0.7rem 1rem;
 }
 
@@ -84,10 +120,12 @@
     height: 2rem;
     font-size: 0.82rem;
     padding: 0.4rem 0.55rem;
+    border-color: rgba(68, 68, 68, var(--results-chrome-opacity, 1));
+    background: rgba(255, 255, 255, var(--results-chrome-opacity, 1));
 }
 
 .results-search:focus {
-    border-color: var(--filter-gold);
+    border-color: color-mix(in srgb, var(--filter-gold) calc(var(--results-chrome-opacity, 1) * 100%), transparent);
     outline: 2px solid color-mix(in srgb, var(--filter-gold) 28%, transparent);
     outline-offset: 1px;
 }
@@ -103,9 +141,9 @@
     gap: 0.4rem;
     height: 2rem;
     box-sizing: border-box;
-    border: 1px solid #444;
+    border: 1px solid rgba(68, 68, 68, var(--results-chrome-opacity, 1));
     border-radius: var(--radius);
-    background: #fff;
+    background: rgba(255, 255, 255, var(--results-chrome-opacity, 1));
     color: inherit;
     cursor: pointer;
     font: inherit;
@@ -116,13 +154,14 @@
 }
 
 .results-sort-toggle:hover {
-    background: var(--slider-handle-hover);
+    background: color-mix(in srgb, var(--slider-handle-hover) calc(var(--results-chrome-opacity, 1) * 100%), transparent);
 }
 
 .results-sort-caret {
     flex: 0 0 auto;
     width: 0.7rem;
     height: 0.7rem;
+    opacity: var(--results-chrome-opacity, 1);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23555' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
     background-position: center;
     background-repeat: no-repeat;
@@ -130,16 +169,14 @@
 }
 
 .results-sort-menu {
-    position: absolute;
-    top: calc(100% + 0.25rem);
-    right: 0;
-    z-index: 5;
+    position: fixed;
+    z-index: 100;
     min-width: 9rem;
     box-sizing: border-box;
-    border: 1px solid #9a9a9a;
+    border: 1px solid rgba(154, 154, 154, var(--results-chrome-opacity, 1));
     border-radius: var(--radius);
-    background: #fff;
-    box-shadow: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, var(--results-chrome-opacity, 1));
+    box-shadow: 0 0.35rem 0.85rem rgba(0, 0, 0, calc(0.12 * var(--results-chrome-opacity, 1)));
     padding: 0.25rem;
 }
 
@@ -164,7 +201,7 @@
 
 .results-sort-option::before {
     content: '';
-    color: var(--filter-gold);
+    color: color-mix(in srgb, var(--filter-gold) calc(var(--results-chrome-opacity, 1) * 100%), transparent);
     font-weight: 700;
     text-align: center;
 }
@@ -175,7 +212,11 @@
 
 .results-sort-option:hover,
 .results-sort-option[aria-checked="true"] {
-    background: color-mix(in srgb, var(--filter-gold-light) 35%, #fff);
+    background: color-mix(
+        in srgb,
+        color-mix(in srgb, var(--filter-gold-light) 35%, #fff) calc(var(--results-chrome-opacity, 1) * 100%),
+        transparent
+    );
 }
 
 .result-search-highlight {
@@ -193,6 +234,7 @@
 .compact-switch .switch-control {
     width: 1.7rem;
     height: 0.9rem;
+    background: color-mix(in srgb, var(--switch-off) calc(var(--results-chrome-opacity, 1) * 100%), transparent);
 }
 
 .compact-switch .switch-control::after {
@@ -200,6 +242,12 @@
     left: 0.13rem;
     width: 0.64rem;
     height: 0.64rem;
+    background: rgba(255, 255, 255, var(--results-chrome-opacity, 1));
+    box-shadow: 0 1px 2px rgba(0, 0, 0, calc(0.25 * var(--results-chrome-opacity, 1)));
+}
+
+.compact-switch input:checked + .switch-control {
+    background: color-mix(in srgb, var(--filter-gold) calc(var(--results-chrome-opacity, 1) * 100%), transparent);
 }
 
 .compact-switch input:checked + .switch-control::after {
@@ -212,7 +260,7 @@
     height: 2rem;
     border: 0;
     background: transparent;
-    color: #333;
+    color: rgba(51, 51, 51, var(--results-chrome-opacity, 1));
     cursor: pointer;
     font: inherit;
     font-size: 1.25rem;
@@ -222,7 +270,7 @@
 }
 
 .panel-icon-button:hover {
-    background: var(--slider-handle-hover);
+    background: color-mix(in srgb, var(--slider-handle-hover) calc(var(--results-chrome-opacity, 1) * 100%), transparent);
 }
 
 .panel-icon-button:focus-visible,
@@ -257,9 +305,20 @@
     top: 0;
     z-index: 2;
     margin: 0 0 0.45rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--filter-gold-light) 80%, #fff);
-    background: color-mix(in srgb, var(--filter-gold-light) 30%, #fff);
-    box-shadow: 0 0.15rem 0.2rem rgba(0, 0, 0, 0.08);
+    /* Opaque fill so stacked stickies do not blend; inset edge instead of
+       drop shadow so overlapping sticky headers do not darken each other.
+       Alpha follows --results-chrome-opacity when results are idle. */
+    border-bottom: 1px solid color-mix(
+        in srgb,
+        color-mix(in srgb, var(--filter-gold-light) 55%, #bbb) calc(var(--results-chrome-opacity, 1) * 100%),
+        transparent
+    );
+    background: color-mix(
+        in srgb,
+        color-mix(in srgb, var(--filter-gold-light) 30%, #fff) calc(var(--results-chrome-opacity, 1) * 100%),
+        transparent
+    );
+    box-shadow: inset 0 -2px 3px -1px rgba(0, 0, 0, calc(0.08 * var(--results-chrome-opacity, 1)));
     color: #333;
     font-size: 0.78rem;
     font-weight: 700;
@@ -278,8 +337,8 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.75rem;
-    border: 1px solid #d1d1d1;
-    background: #fff;
+    border: 1px solid rgba(209, 209, 209, var(--results-chrome-opacity, 1));
+    background: rgba(255, 255, 255, var(--results-chrome-opacity, 1));
     padding: 0.85rem 0.9rem;
 }
 

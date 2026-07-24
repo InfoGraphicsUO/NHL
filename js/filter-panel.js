@@ -38,10 +38,13 @@
         'County',
         'State'
     ];
-    // source values that need a public facing state name
+    // source values that need a public facing state / territory name
+    // aliases (full names and codes) share one label so State/Territory sort groups correctly
     const STATE_NAMES = {
         AL: 'Alabama',
         AK: 'Alaska',
+        AS: 'American Samoa',
+        'AMERICAN SAMOA': 'American Samoa',
         AZ: 'Arizona',
         AR: 'Arkansas',
         CA: 'California',
@@ -62,8 +65,12 @@
         LA: 'Louisiana',
         ME: 'Maine',
         MD: 'Maryland',
+        MH: 'Marshall Islands',
+        'MARSHALL ISLANDS': 'Marshall Islands',
         MA: 'Massachusetts',
         MI: 'Michigan',
+        FM: 'Federated States of Micronesia',
+        'FED. STATES': 'Federated States of Micronesia',
         MN: 'Minnesota',
         MS: 'Mississippi',
         MO: 'Missouri',
@@ -77,9 +84,12 @@
         NC: 'North Carolina',
         ND: 'North Dakota',
         MP: 'Northern Mariana Islands',
+        'N. MARIANA ISLANDS': 'Northern Mariana Islands',
         OH: 'Ohio',
         OK: 'Oklahoma',
         OR: 'Oregon',
+        PW: 'Palau',
+        PALAU: 'Palau',
         PA: 'Pennsylvania',
         PR: 'Puerto Rico',
         RI: 'Rhode Island',
@@ -90,19 +100,15 @@
         UT: 'Utah',
         VT: 'Vermont',
         VI: 'U.S. Virgin Islands',
+        'VIRGIN ISLANDS': 'U.S. Virgin Islands',
+        'U.S. MINOR ISLANDS': 'U.S. Minor Outlying Islands',
+        UM: 'U.S. Minor Outlying Islands',
         VA: 'Virginia',
         WA: 'Washington',
         WV: 'West Virginia',
         WI: 'Wisconsin',
         WY: 'Wyoming',
-        'AMERICAN SAMOA': 'American Samoa',
-        'FED. STATES': 'Fed. States',
-        'MARSHALL ISLANDS': 'Marshall Islands',
-        'N. MARIANA ISLANDS': 'N. Mariana Islands',
-        'PALAU': 'Palau',
-        'U.S. MINOR ISLANDS': 'U.S. Minor Islands',
-        'VIRGIN ISLANDS': 'Virgin Islands',
-        'MOROCCO': 'Morocco'
+        MOROCCO: 'Morocco'
     };
     const SELECT_FIELDS = {};
     // field metadata shared by multi select menus and filter matching
@@ -164,7 +170,7 @@
             .replace(/(^|[\s./&;,-])([a-z])/g, (_, boundary, letter) => boundary + letter.toUpperCase());
     }
 
-    // normalizes state codes and all caps source values for display
+    // normalizes state/territory codes and all-caps source values for display
     function stateDisplayName(value) {
         const normalized = String(value || '').trim();
         if (!normalized) return '';
@@ -984,7 +990,7 @@
         function resultGroup(feature) {
             const props = feature.properties || {};
             if (selectedSort === 'state') {
-                const label = stateDisplayName(props.State).trim() || 'State unavailable';
+                const label = stateDisplayName(props.State).trim() || 'State/Territory unavailable';
                 return { key: label.toLocaleLowerCase(), label, modifier: 'state' };
             }
             if (selectedSort === 'city') {
@@ -1001,11 +1007,48 @@
             return sortFeatures(visible, selectedSort, appliedState, resultsQuery);
         }
 
+        function clearSortMenuPosition() {
+            if (!resultsSortMenu) return;
+            resultsSortMenu.style.top = '';
+            resultsSortMenu.style.bottom = '';
+            resultsSortMenu.style.left = '';
+            resultsSortMenu.style.width = '';
+        }
+
+        function positionSortMenu() {
+            if (!resultsSortToggle || !resultsSortMenu || resultsSortMenu.hidden) return;
+
+            const rect = resultsSortToggle.getBoundingClientRect();
+            const gap = 4;
+            resultsSortMenu.style.width = '';
+            resultsSortMenu.style.bottom = 'auto';
+            const menuWidth = resultsSortMenu.offsetWidth;
+            resultsSortMenu.style.left = `${Math.round(rect.right - menuWidth)}px`;
+            resultsSortMenu.style.top = `${Math.round(rect.bottom + gap)}px`;
+        }
+
+        // moves the menu to body so sticky group headers cannot cover it
         function setSortMenuOpen(open, { focus = false, focusLast = false } = {}) {
             if (!resultsSortToggle || !resultsSortMenu) return;
+            const sortRoot = resultsSortToggle.closest('.results-sort');
             resultsSortToggle.setAttribute('aria-expanded', String(open));
-            resultsSortMenu.hidden = !open;
-            if (!open || !focus || resultsSortOptions.length === 0) return;
+            if (!open) {
+                resultsSortMenu.hidden = true;
+                clearSortMenuPosition();
+                if (resultsSortMenu.dataset.ported === 'true') {
+                    sortRoot?.appendChild(resultsSortMenu);
+                    delete resultsSortMenu.dataset.ported;
+                }
+                return;
+            }
+            if (resultsSortMenu.parentElement !== document.body) {
+                document.body.appendChild(resultsSortMenu);
+                resultsSortMenu.dataset.ported = 'true';
+            }
+            resultsSortMenu.hidden = false;
+            positionSortMenu();
+            requestAnimationFrame(() => positionSortMenu());
+            if (!focus || resultsSortOptions.length === 0) return;
             const selectedIndex = resultsSortOptions.findIndex(option => option.dataset.sortValue === selectedSort);
             const target = focusLast
                 ? resultsSortOptions[resultsSortOptions.length - 1]
@@ -1213,6 +1256,80 @@
             });
         });
 
+        // results-mode idle chrome: dim after 5s off-panel, wake on hover
+        const RESULTS_IDLE_DELAY_MS = 5000;
+        const RESULTS_CHROME_RESTORE_MS = 120;
+        let resultsIdleTimer = 0;
+        let resultsChromeRestoreTimer = 0;
+
+        function clearResultsIdleTimer() {
+            if (!resultsIdleTimer) return;
+            clearTimeout(resultsIdleTimer);
+            resultsIdleTimer = 0;
+        }
+
+        function clearResultsChromeInline() {
+            if (!shell) return;
+            if (resultsChromeRestoreTimer) {
+                clearTimeout(resultsChromeRestoreTimer);
+                resultsChromeRestoreTimer = 0;
+            }
+            shell.style.removeProperty('transition');
+            shell.style.removeProperty('--results-chrome-opacity');
+        }
+
+        // Chromium sticks @property --results-chrome-opacity at 0.5 after a CSS
+        // transition to idle; removing the class alone does not restore. Pin the
+        // current value with transition:none, reflow, then transition to 1.
+        function restoreResultsChromeOpacity() {
+            if (!shell) return;
+            const raw = getComputedStyle(shell).getPropertyValue('--results-chrome-opacity').trim();
+            const from = Number.parseFloat(raw);
+            const start = Number.isFinite(from) ? from : 0.5;
+            const durationMs = prefersReducedMotion ? 0 : RESULTS_CHROME_RESTORE_MS;
+
+            if (resultsChromeRestoreTimer) {
+                clearTimeout(resultsChromeRestoreTimer);
+                resultsChromeRestoreTimer = 0;
+            }
+
+            shell.style.transition = 'none';
+            shell.style.setProperty('--results-chrome-opacity', String(start));
+            void shell.offsetWidth;
+
+            if (durationMs <= 0) {
+                shell.style.setProperty('--results-chrome-opacity', '1');
+                clearResultsChromeInline();
+                return;
+            }
+
+            shell.style.transition = `--results-chrome-opacity ${durationMs}ms ease`;
+            shell.style.setProperty('--results-chrome-opacity', '1');
+            resultsChromeRestoreTimer = setTimeout(() => {
+                resultsChromeRestoreTimer = 0;
+                clearResultsChromeInline();
+            }, durationMs + 50);
+        }
+
+        function wakeResultsPanel() {
+            clearResultsIdleTimer();
+            if (!shell) return;
+            const wasIdle = shell.classList.contains('is-results-idle');
+            shell.classList.remove('is-results-idle');
+            if (wasIdle) restoreResultsChromeOpacity();
+        }
+
+        function scheduleResultsIdle() {
+            clearResultsIdleTimer();
+            if (!shell?.classList.contains('is-open') || !shell.classList.contains('showing-results')) return;
+            resultsIdleTimer = setTimeout(() => {
+                resultsIdleTimer = 0;
+                if (!shell.classList.contains('is-open') || !shell.classList.contains('showing-results')) return;
+                clearResultsChromeInline();
+                shell.classList.add('is-results-idle');
+            }, RESULTS_IDLE_DELAY_MS);
+        }
+
         // public panel API used by map and detail interactions
         const controller = {
             applyFilters,
@@ -1223,16 +1340,22 @@
                 if (detailView) detailView.hidden = true;
                 if (resultsView) resultsView.setAttribute('aria-hidden', 'false');
                 if (detailView) detailView.setAttribute('aria-hidden', 'true');
+                wakeResultsPanel();
+                if (shell && !shell.matches(':hover')) scheduleResultsIdle();
             },
             hideResultsPanel() {
                 setSortMenuOpen(false);
-                if (shell) shell.classList.remove('is-open', 'showing-results');
+                clearResultsIdleTimer();
+                clearResultsChromeInline();
+                if (shell) shell.classList.remove('is-open', 'showing-results', 'is-results-idle');
                 if (resultsView) resultsView.hidden = true;
             },
             showDetail() {
                 setSortMenuOpen(false);
+                clearResultsIdleTimer();
+                clearResultsChromeInline();
                 if (shell) shell.classList.add('is-open');
-                if (shell) shell.classList.remove('showing-results');
+                if (shell) shell.classList.remove('showing-results', 'is-results-idle');
                 if (resultsView) resultsView.hidden = true;
                 if (detailView) detailView.hidden = false;
                 if (resultsView) resultsView.setAttribute('aria-hidden', 'true');
@@ -1253,7 +1376,10 @@
             // returns portaled menus and removes all panel side effects
             destroy() {
                 if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
+                clearResultsIdleTimer();
+                clearResultsChromeInline();
                 clearTabContentHeight();
+                setSortMenuOpen(false);
                 closeAllMultiSelects();
                 clearAllMultiSelectTypeahead();
                 listeners.splice(0).forEach(remove => remove());
@@ -1275,6 +1401,8 @@
         listen(applyButton, 'click', applyFilters);
         listen(clearButton, 'click', clearDraft);
         listen(closeButton, 'click', () => controller.hideResultsPanel());
+        listen(shell, 'pointerenter', () => wakeResultsPanel());
+        listen(shell, 'pointerleave', () => scheduleResultsIdle());
         listen(resultsSearch, 'input', () => {
             resultsQuery = resultsSearch.value || '';
             renderResults();
@@ -1367,10 +1495,17 @@
             });
             listen(menu, 'keydown', event => handleMultiSelectMenuNavigation(key, event));
         });
+        function repositionOpenMenus() {
+            repositionOpenMultiSelectMenus();
+            if (resultsSortToggle?.getAttribute('aria-expanded') === 'true') positionSortMenu();
+        }
+
         listen(document, 'pointerdown', event => {
             if (resultsSortToggle?.getAttribute('aria-expanded') === 'true') {
                 const sortRoot = resultsSortToggle.closest('.results-sort');
-                if (!sortRoot?.contains(event.target)) setSortMenuOpen(false);
+                if (!sortRoot?.contains(event.target) && !resultsSortMenu?.contains(event.target)) {
+                    setSortMenuOpen(false);
+                }
             }
             Object.entries(MULTI_SELECT_FIELDS).forEach(([key, config]) => {
                 const toggle = byId(config.toggleId);
@@ -1381,8 +1516,9 @@
                 setMultiSelectOpen(key, false);
             });
         });
-        listen(window, 'resize', repositionOpenMultiSelectMenus);
-        listen(document.querySelector('#filter-panel .filter-panel-body'), 'scroll', repositionOpenMultiSelectMenus);
+        listen(window, 'resize', repositionOpenMenus);
+        listen(document.querySelector('#filter-panel .filter-panel-body'), 'scroll', repositionOpenMenus);
+        listen(resultsList, 'scroll', repositionOpenMenus);
         listen(document, 'keydown', event => {
             if (event.key === 'Escape') {
                 if (resultsSortToggle?.getAttribute('aria-expanded') === 'true') {
