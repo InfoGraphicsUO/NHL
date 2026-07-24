@@ -28,6 +28,16 @@
         'City',
         'State'
     ];
+    // fields searched by the best match algorithm
+    const BEST_MATCH_SEARCH_FIELDS = [
+        'Historic_Name',
+        'Other_Name_s_',
+        'Multiple_Name',
+        'ReferenceID',
+        'City',
+        'County',
+        'State'
+    ];
     // source values that need a public facing state name
     const STATE_NAMES = {
         AL: 'Alabama',
@@ -337,11 +347,115 @@
         return true;
     }
 
-    // keeps result order stable when names or ids are similar
-    function sortFeatures(features) {
+    function comparePresentText(a, b) {
+        const left = String(a || '').trim();
+        const right = String(b || '').trim();
+        if (!left || !right) return left ? -1 : right ? 1 : 0;
+        return COLLATOR.compare(left, right);
+    }
+
+    // compares arbitrarily long digit-only IDs without losing precision or treating leading zeroes as significant
+    function compareReferenceIds(a, b) {
+        const left = String(a || '').trim();
+        const right = String(b || '').trim();
+        if (!left || !right) return left ? -1 : right ? 1 : 0;
+        const leftIsNumeric = /^\d+$/.test(left);
+        const rightIsNumeric = /^\d+$/.test(right);
+        if (leftIsNumeric && rightIsNumeric) {
+            const normalizedLeft = left.replace(/^0+(?=\d)/, '');
+            const normalizedRight = right.replace(/^0+(?=\d)/, '');
+            return normalizedLeft.length - normalizedRight.length
+                || normalizedLeft.localeCompare(normalizedRight)
+                || left.length - right.length;
+        }
+        if (leftIsNumeric !== rightIsNumeric) return leftIsNumeric ? -1 : 1;
+        return COLLATOR.compare(left, right);
+    }
+
+    function featureTieBreak(a, b) {
+        return comparePresentText(a.properties?.Historic_Name, b.properties?.Historic_Name)
+            || compareReferenceIds(a.properties?.ReferenceID, b.properties?.ReferenceID)
+            || COLLATOR.compare(String(a.id ?? ''), String(b.id ?? ''));
+    }
+
+    function textMatchScore(feature, query, fields) {
+        const needle = String(query || '').trim().toLowerCase();
+        if (!needle) return { strength: 0, priority: 0 };
+        const props = feature.properties || {};
+        let bestStrength = 0;
+        let bestPriority = 0;
+        fields.forEach((field, index) => {
+            const values = [String(props[field] || '').trim().toLowerCase()];
+            if (field === 'State') values.push(stateDisplayName(props.State).toLowerCase());
+            values.forEach(value => {
+                if (!value.includes(needle)) return;
+                const strength = value === needle ? 3 : value.startsWith(needle) ? 2 : 1;
+                // Earlier fields have higher priority, with primary name always first.
+                const priority = fields.length - index;
+                if (strength > bestStrength || (strength === bestStrength && priority > bestPriority)) {
+                    bestStrength = strength;
+                    bestPriority = priority;
+                }
+            });
+        });
+        return { strength: bestStrength, priority: bestPriority };
+    }
+
+    function selectedGroupMatchCount(props, selected, fields) {
+        if (!Array.isArray(selected) || selected.length === fields.length + 1) return 0;
+        const hasCategory = fields.some(field => props[field] === '1');
+        return selected.reduce((count, field) => (
+            count + (field === 'None' ? Number(!hasCategory) : Number(props[field] === '1'))
+        ), 0);
+    }
+
+    function bestMatchScore(feature, appliedState, resultsQuery) {
+        const appliedText = textMatchScore(feature, appliedState?.search, BEST_MATCH_SEARCH_FIELDS);
+        const resultsText = textMatchScore(feature, resultsQuery, RESULTS_SEARCH_FIELDS);
+        const cityText = textMatchScore(feature, appliedState?.city, ['City']);
+        const countyText = textMatchScore(feature, appliedState?.county, ['County']);
+        const props = feature.properties || {};
+        return {
+            strength: appliedText.strength + resultsText.strength + cityText.strength + countyText.strength,
+            priority: appliedText.priority + resultsText.priority + cityText.priority + countyText.priority,
+            categories: selectedGroupMatchCount(props, appliedState?.modes, MODE_FIELDS)
+                + selectedGroupMatchCount(props, appliedState?.supremacy, SUPREMACY_FIELDS)
+        };
+    }
+
+    // sorts a copy so rendering can change order without mutating the controller's applied result set
+    function sortFeatures(features, sortValue = 'best-match', appliedState = null, resultsQuery = '') {
         return features.slice().sort((a, b) => {
-            const nameOrder = COLLATOR.compare(a.properties?.Historic_Name || '', b.properties?.Historic_Name || '');
-            return nameOrder || COLLATOR.compare(a.properties?.ReferenceID || '', b.properties?.ReferenceID || '');
+            const left = a.properties || {};
+            const right = b.properties || {};
+            if (sortValue === 'name') {
+                return comparePresentText(left.Historic_Name, right.Historic_Name)
+                    || comparePresentText(stateDisplayName(left.State), stateDisplayName(right.State))
+                    || comparePresentText(left.City, right.City)
+                    || compareReferenceIds(left.ReferenceID, right.ReferenceID)
+                    || COLLATOR.compare(String(a.id ?? ''), String(b.id ?? ''));
+            }
+            if (sortValue === 'state') {
+                return comparePresentText(stateDisplayName(left.State), stateDisplayName(right.State))
+                    || comparePresentText(left.City, right.City)
+                    || featureTieBreak(a, b);
+            }
+            if (sortValue === 'city') {
+                return comparePresentText(left.City, right.City)
+                    || comparePresentText(stateDisplayName(left.State), stateDisplayName(right.State))
+                    || featureTieBreak(a, b);
+            }
+            if (sortValue === 'id') {
+                return compareReferenceIds(left.ReferenceID, right.ReferenceID)
+                    || featureTieBreak(a, b);
+            }
+
+            const leftScore = bestMatchScore(a, appliedState, resultsQuery);
+            const rightScore = bestMatchScore(b, appliedState, resultsQuery);
+            return rightScore.strength - leftScore.strength
+                || rightScore.priority - leftScore.priority
+                || rightScore.categories - leftScore.categories
+                || featureTieBreak(a, b);
         });
     }
 
@@ -370,6 +484,9 @@
         const resultsList = byId('results-list');
         const resultsCount = byId('results-count');
         const resultsSearch = byId('results-search');
+        const resultsSortToggle = byId('results-sort-toggle');
+        const resultsSortMenu = byId('results-sort-menu');
+        const resultsSortOptions = Array.from(resultsSortMenu?.querySelectorAll('[data-sort-value]') || []);
         const compactToggle = byId('compact-results-toggle');
         const closeButton = byId('results-panel-close');
         const detailBack = byId('detail-back');
@@ -378,6 +495,7 @@
         const tabContent = byId('filter-content');
         const listeners = [];
         let resultsQuery = '';
+        let selectedSort = 'best-match';
 
         // tab height animation state
         let tabHeightFrame = 0;
@@ -863,9 +981,49 @@
             return place.join(', ') || 'Location unavailable';
         }
 
+        function resultGroup(feature) {
+            const props = feature.properties || {};
+            if (selectedSort === 'state') {
+                const label = stateDisplayName(props.State).trim() || 'State unavailable';
+                return { key: label.toLocaleLowerCase(), label, modifier: 'state' };
+            }
+            if (selectedSort === 'city') {
+                const label = String(props.City || '').trim() || 'City unavailable';
+                return { key: label.toLocaleLowerCase(), label, modifier: 'city' };
+            }
+            return null;
+        }
+
         function getVisibleResults() {
-            if (!resultsQuery.trim()) return appliedResults;
-            return appliedResults.filter(feature => featureMatchesResultsQuery(feature, resultsQuery));
+            const visible = resultsQuery.trim()
+                ? appliedResults.filter(feature => featureMatchesResultsQuery(feature, resultsQuery))
+                : appliedResults;
+            return sortFeatures(visible, selectedSort, appliedState, resultsQuery);
+        }
+
+        function setSortMenuOpen(open, { focus = false, focusLast = false } = {}) {
+            if (!resultsSortToggle || !resultsSortMenu) return;
+            resultsSortToggle.setAttribute('aria-expanded', String(open));
+            resultsSortMenu.hidden = !open;
+            if (!open || !focus || resultsSortOptions.length === 0) return;
+            const selectedIndex = resultsSortOptions.findIndex(option => option.dataset.sortValue === selectedSort);
+            const target = focusLast
+                ? resultsSortOptions[resultsSortOptions.length - 1]
+                : resultsSortOptions[Math.max(0, selectedIndex)];
+            target.focus();
+        }
+
+        function selectSort(sortValue, { returnFocus = true } = {}) {
+            if (!resultsSortOptions.some(option => option.dataset.sortValue === sortValue)) return;
+            selectedSort = sortValue;
+            resultsSortOptions.forEach(option => {
+                const selected = option.dataset.sortValue === selectedSort;
+                option.setAttribute('aria-checked', String(selected));
+                option.classList.toggle('is-selected', selected);
+            });
+            setSortMenuOpen(false);
+            renderResults();
+            if (returnFocus) resultsSortToggle?.focus();
         }
 
         let appliedState = null;
@@ -897,8 +1055,19 @@
 
             const fragment = document.createDocumentFragment();
             const highlightQuery = resultsQuery.trim();
+            let previousGroupKey = null;
             visibleResults.forEach(feature => {
                 const props = feature.properties || {};
+
+                const group = resultGroup(feature);
+                if (group && group.key !== previousGroupKey) {
+                    const heading = document.createElement('h3');
+                    heading.className = `result-group-header result-group-header--${group.modifier}`;
+                    heading.dataset.resultGroup = group.modifier;
+                    heading.textContent = group.label;
+                    fragment.appendChild(heading);
+                    previousGroupKey = group.key;
+                }
 
                 // result identity and location
                 const card = document.createElement('article');
@@ -957,7 +1126,10 @@
         // commits the draft state to the map layer and results list
         function applyFilters({ openResults = true, clearSelection = true } = {}) {
             appliedState = readDraft();
-            appliedResults = sortFeatures(features().filter(feature => featureMatchesAppliedFilters(feature, appliedState)));
+            appliedResults = sortFeatures(
+                features().filter(feature => featureMatchesAppliedFilters(feature, appliedState)),
+                'name'
+            );
 
             if (clearSelection && typeof options.onClearSelection === 'function') options.onClearSelection();
             if (typeof setActivePointFilters === 'function') setActivePointFilters(map, activeIdExpression(appliedResults));
@@ -1053,10 +1225,12 @@
                 if (detailView) detailView.setAttribute('aria-hidden', 'true');
             },
             hideResultsPanel() {
+                setSortMenuOpen(false);
                 if (shell) shell.classList.remove('is-open', 'showing-results');
                 if (resultsView) resultsView.hidden = true;
             },
             showDetail() {
+                setSortMenuOpen(false);
                 if (shell) shell.classList.add('is-open');
                 if (shell) shell.classList.remove('showing-results');
                 if (resultsView) resultsView.hidden = true;
@@ -1068,7 +1242,10 @@
             getAppliedState: () => appliedState ? cloneState(appliedState) : null,
             // reapplies the saved state after the source data changes
             refreshResults() {
-                appliedResults = sortFeatures(features().filter(feature => featureMatchesAppliedFilters(feature, appliedState || readDraft())));
+                appliedResults = sortFeatures(
+                    features().filter(feature => featureMatchesAppliedFilters(feature, appliedState || readDraft())),
+                    'name'
+                );
                 setResultsCount(appliedResults.length);
                 renderResults();
                 return appliedResults.slice();
@@ -1101,6 +1278,48 @@
         listen(resultsSearch, 'input', () => {
             resultsQuery = resultsSearch.value || '';
             renderResults();
+        });
+        listen(resultsSortToggle, 'click', event => {
+            event.preventDefault();
+            const willOpen = resultsSortToggle.getAttribute('aria-expanded') !== 'true';
+            setSortMenuOpen(willOpen, { focus: willOpen });
+        });
+        listen(resultsSortToggle, 'keydown', event => {
+            if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+            event.preventDefault();
+            setSortMenuOpen(true, { focus: true, focusLast: event.key === 'ArrowUp' });
+        });
+        listen(resultsSortMenu, 'click', event => {
+            const option = event.target.closest('[data-sort-value]');
+            if (!option || !resultsSortMenu.contains(option)) return;
+            selectSort(option.dataset.sortValue);
+        });
+        listen(resultsSortMenu, 'keydown', event => {
+            const current = event.target.closest('[data-sort-value]');
+            if (!current) return;
+            const currentIndex = resultsSortOptions.indexOf(current);
+            let targetIndex = currentIndex;
+            if (event.key === 'ArrowDown') targetIndex = (currentIndex + 1) % resultsSortOptions.length;
+            else if (event.key === 'ArrowUp') targetIndex = (currentIndex - 1 + resultsSortOptions.length) % resultsSortOptions.length;
+            else if (event.key === 'Home') targetIndex = 0;
+            else if (event.key === 'End') targetIndex = resultsSortOptions.length - 1;
+            else if (event.key === 'Escape') {
+                event.preventDefault();
+                setSortMenuOpen(false);
+                resultsSortToggle?.focus();
+                return;
+            } else if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                selectSort(current.dataset.sortValue);
+                return;
+            } else if (event.key === 'Tab') {
+                setSortMenuOpen(false);
+                return;
+            } else {
+                return;
+            }
+            event.preventDefault();
+            resultsSortOptions[targetIndex]?.focus();
         });
         listen(compactToggle, 'change', () => {
             resultsView?.classList.toggle('is-compact', compactToggle.checked);
@@ -1149,6 +1368,10 @@
             listen(menu, 'keydown', event => handleMultiSelectMenuNavigation(key, event));
         });
         listen(document, 'pointerdown', event => {
+            if (resultsSortToggle?.getAttribute('aria-expanded') === 'true') {
+                const sortRoot = resultsSortToggle.closest('.results-sort');
+                if (!sortRoot?.contains(event.target)) setSortMenuOpen(false);
+            }
             Object.entries(MULTI_SELECT_FIELDS).forEach(([key, config]) => {
                 const toggle = byId(config.toggleId);
                 const root = byId(config.rootId);
@@ -1162,6 +1385,11 @@
         listen(document.querySelector('#filter-panel .filter-panel-body'), 'scroll', repositionOpenMultiSelectMenus);
         listen(document, 'keydown', event => {
             if (event.key === 'Escape') {
+                if (resultsSortToggle?.getAttribute('aria-expanded') === 'true') {
+                    setSortMenuOpen(false);
+                    resultsSortToggle.focus();
+                    return;
+                }
                 const openKey = Object.keys(MULTI_SELECT_FIELDS).find(key => (
                     byId(MULTI_SELECT_FIELDS[key].toggleId)?.getAttribute('aria-expanded') === 'true'
                 ));
@@ -1192,6 +1420,12 @@
         });
         // source data is ready before the initial map filter and result count
         window._nhlFilterPanelController = controller;
+        resultsSortOptions.forEach(option => {
+            const selected = option.dataset.sortValue === selectedSort;
+            option.setAttribute('aria-checked', String(selected));
+            option.classList.toggle('is-selected', selected);
+        });
+        setSortMenuOpen(false);
         syncApplyButtonState();
         applyFilters({ openResults: false, clearSelection: false });
         controller.hideResultsPanel();
