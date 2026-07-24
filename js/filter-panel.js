@@ -19,15 +19,155 @@
         'County',
         'State'
     ];
-    const SELECT_FIELDS = {
-        state: { property: 'State', ids: ['place-state', 'state-filter', 'filter-state'] },
-        office: { property: 'NHL Office', ids: ['nhl-office', 'nhl-office-filter', 'filter-nhl-office'] },
-        nationalPark: { property: 'National_Park', ids: ['national-park', 'national-park-filter', 'filter-national-park'] },
-        federalAgency: { property: 'Federal_Agency', ids: ['federal-agency', 'federal-agency-filter', 'filter-federal-agency'] },
-        primaryForm: { property: 'Primary Form', ids: ['primary-form', 'primary-form-filter', 'filter-primary-form'] },
-        requestType: { property: 'Request_Type', ids: ['request-type', 'request-type-filter', 'filter-request-type'] }
+    const STATE_NAMES = {
+        AL: 'Alabama',
+        AK: 'Alaska',
+        AZ: 'Arizona',
+        AR: 'Arkansas',
+        CA: 'California',
+        CO: 'Colorado',
+        CT: 'Connecticut',
+        DE: 'Delaware',
+        DC: 'District of Columbia',
+        FL: 'Florida',
+        GA: 'Georgia',
+        GU: 'Guam',
+        HI: 'Hawaii',
+        ID: 'Idaho',
+        IL: 'Illinois',
+        IN: 'Indiana',
+        IA: 'Iowa',
+        KS: 'Kansas',
+        KY: 'Kentucky',
+        LA: 'Louisiana',
+        ME: 'Maine',
+        MD: 'Maryland',
+        MA: 'Massachusetts',
+        MI: 'Michigan',
+        MN: 'Minnesota',
+        MS: 'Mississippi',
+        MO: 'Missouri',
+        MT: 'Montana',
+        NE: 'Nebraska',
+        NV: 'Nevada',
+        NH: 'New Hampshire',
+        NJ: 'New Jersey',
+        NM: 'New Mexico',
+        NY: 'New York',
+        NC: 'North Carolina',
+        ND: 'North Dakota',
+        MP: 'Northern Mariana Islands',
+        OH: 'Ohio',
+        OK: 'Oklahoma',
+        OR: 'Oregon',
+        PA: 'Pennsylvania',
+        PR: 'Puerto Rico',
+        RI: 'Rhode Island',
+        SC: 'South Carolina',
+        SD: 'South Dakota',
+        TN: 'Tennessee',
+        TX: 'Texas',
+        UT: 'Utah',
+        VT: 'Vermont',
+        VI: 'U.S. Virgin Islands',
+        VA: 'Virginia',
+        WA: 'Washington',
+        WV: 'West Virginia',
+        WI: 'Wisconsin',
+        WY: 'Wyoming',
+        'AMERICAN SAMOA': 'American Samoa',
+        'FED. STATES': 'Fed. States',
+        'MARSHALL ISLANDS': 'Marshall Islands',
+        'N. MARIANA ISLANDS': 'N. Mariana Islands',
+        'PALAU': 'Palau',
+        'U.S. MINOR ISLANDS': 'U.S. Minor Islands',
+        'VIRGIN ISLANDS': 'Virgin Islands',
+        'MOROCCO': 'Morocco'
+    };
+    const SELECT_FIELDS = {};
+    const MULTI_SELECT_FIELDS = {
+        state: {
+            property: 'State',
+            rootId: 'state-filter',
+            toggleId: 'state-filter-toggle',
+            menuId: 'state-filter-menu',
+            checkboxClass: 'state-filter',
+            displayName: stateDisplayName
+        },
+        office: {
+            property: 'NHL Office',
+            rootId: 'nhl-office-filter',
+            toggleId: 'nhl-office-filter-toggle',
+            menuId: 'nhl-office-filter-menu',
+            checkboxClass: 'office-filter',
+            displayName: displayValue
+        },
+        nationalPark: {
+            property: 'National_Park',
+            rootId: 'national-park-filter',
+            toggleId: 'national-park-filter-toggle',
+            menuId: 'national-park-filter-menu',
+            checkboxClass: 'national-park-filter',
+            displayName: displayValue
+        },
+        federalAgency: {
+            property: 'Federal_Agency',
+            rootId: 'federal-agency-filter',
+            toggleId: 'federal-agency-filter-toggle',
+            menuId: 'federal-agency-filter-menu',
+            checkboxClass: 'federal-agency-filter',
+            displayName: agencyDisplayName
+        },
+        primaryForm: {
+            property: 'Primary Form',
+            rootId: 'primary-form-filter',
+            toggleId: 'primary-form-filter-toggle',
+            menuId: 'primary-form-filter-menu',
+            checkboxClass: 'primary-form-filter',
+            displayName: displayValue
+        },
+        requestType: {
+            property: 'Request_Type',
+            rootId: 'request-type-filter',
+            toggleId: 'request-type-filter-toggle',
+            menuId: 'request-type-filter-menu',
+            checkboxClass: 'request-type-filter',
+            displayName: displayValue
+        }
     };
     const COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+
+    function toTitleCase(value) {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/(^|[\s./&;,-])([a-z])/g, (_, boundary, letter) => boundary + letter.toUpperCase());
+    }
+
+    function stateDisplayName(value) {
+        const normalized = String(value || '').trim();
+        if (!normalized) return '';
+        const mapped = STATE_NAMES[normalized] || STATE_NAMES[normalized.toUpperCase()];
+        if (mapped) return mapped;
+        const decoded = displayValue(normalized);
+        return /^[A-Z0-9][A-Z0-9\s./'-]*$/.test(decoded) ? toTitleCase(decoded) : decoded;
+    }
+
+    function agencyDisplayName(value) {
+        const decoded = displayValue(value);
+        if (!decoded) return '';
+        return /^[A-Z0-9][A-Z0-9\s./'&;,()-]*$/.test(decoded) ? toTitleCase(decoded) : decoded;
+    }
+
+    function selectedCheckboxFilterValues(selector) {
+        return Array.from(document.querySelectorAll(selector))
+            .filter(box => box.checked)
+            .map(box => String(box.value || '').trim())
+            .filter(Boolean);
+    }
+
+    function hasSelectFilter(value) {
+        return Array.isArray(value) ? value.length > 0 : Boolean(value);
+    }
 
     function byId(...ids) {
         for (const id of ids) {
@@ -86,6 +226,11 @@
 
         for (const [key, config] of Object.entries(SELECT_FIELDS)) {
             if (state[key] && String(props[config.property] || '').trim() !== state[key]) return false;
+        }
+        for (const [key, config] of Object.entries(MULTI_SELECT_FIELDS)) {
+            const selected = state[key];
+            if (!Array.isArray(selected) || selected.length === 0) continue;
+            if (!selected.includes(String(props[config.property] || '').trim())) return false;
         }
         if (state.city && !String(props.City || '').toLowerCase().includes(state.city.toLowerCase())) return false;
         if (state.county && !String(props.County || '').toLowerCase().includes(state.county.toLowerCase())) return false;
@@ -183,6 +328,8 @@
 
         function onDraftChange() {
             updateDraftIndicators();
+            Object.keys(MULTI_SELECT_FIELDS).forEach(syncMultiSelectLabel);
+            updateStateMonumentCount();
             if (isAutoUpdateEnabled()) applyFilters();
         }
 
@@ -212,6 +359,297 @@
                 });
                 select.value = values.includes(currentValue) ? currentValue : '';
             });
+            Object.keys(MULTI_SELECT_FIELDS).forEach(populateMultiSelect);
+        }
+
+        function selectedMultiValues(key) {
+            const config = MULTI_SELECT_FIELDS[key];
+            return config ? selectedCheckboxFilterValues(`.${config.checkboxClass}`) : [];
+        }
+
+        function syncMultiSelectLabel(key) {
+            const config = MULTI_SELECT_FIELDS[key];
+            if (!config) return;
+            const label = document.querySelector(`#${config.rootId} .multi-select-label`);
+            if (!label) return;
+            const selected = selectedMultiValues(key);
+            if (selected.length === 0) {
+                label.textContent = 'Any';
+            } else if (selected.length === 1) {
+                label.textContent = config.displayName(selected[0]);
+            } else {
+                label.textContent = `${selected.length} selected`;
+            }
+        }
+
+        function clearMultiSelectMenuPosition(menu) {
+            if (!menu) return;
+            menu.style.top = '';
+            menu.style.bottom = '';
+            menu.style.left = '';
+            menu.style.width = '';
+            menu.style.maxHeight = '';
+        }
+
+        function positionMultiSelectMenu(key) {
+            const config = MULTI_SELECT_FIELDS[key];
+            const toggle = byId(config?.toggleId);
+            const menu = byId(config?.menuId);
+            if (!toggle || !menu || menu.hidden) return;
+
+            const rect = toggle.getBoundingClientRect();
+            const gap = 4;
+            const viewportPadding = 8;
+            const preferredMax = 12 * 16;
+            const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+            const spaceAbove = rect.top - gap - viewportPadding;
+            const openAbove = spaceBelow < Math.min(preferredMax, 8 * 16) && spaceAbove > spaceBelow;
+            const available = Math.max(openAbove ? spaceAbove : spaceBelow, 4.5 * 16);
+
+            menu.style.left = `${Math.round(rect.left)}px`;
+            menu.style.width = `${Math.round(rect.width)}px`;
+            menu.style.maxHeight = `${Math.min(preferredMax, available)}px`;
+
+            if (openAbove) {
+                menu.style.top = 'auto';
+                menu.style.bottom = `${Math.round(window.innerHeight - rect.top + gap)}px`;
+            } else {
+                menu.style.bottom = 'auto';
+                menu.style.top = `${Math.round(rect.bottom + gap)}px`;
+            }
+        }
+
+        function repositionOpenMultiSelectMenus() {
+            Object.keys(MULTI_SELECT_FIELDS).forEach(key => {
+                const toggle = byId(MULTI_SELECT_FIELDS[key].toggleId);
+                if (toggle?.getAttribute('aria-expanded') === 'true') positionMultiSelectMenu(key);
+            });
+        }
+
+        function multiSelectCheckboxes(key) {
+            const config = MULTI_SELECT_FIELDS[key];
+            return config
+                ? Array.from(byId(config.menuId)?.querySelectorAll(`.${config.checkboxClass}`) || [])
+                : [];
+        }
+
+        function focusMultiSelectOption(key, position = 'first') {
+            const checkboxes = multiSelectCheckboxes(key);
+            const checkbox = position === 'last' ? checkboxes.at(-1) : checkboxes[0];
+            checkbox?.focus();
+        }
+
+        function setMultiSelectOpen(key, open, { focusOption = false, focusPosition = 'first' } = {}) {
+            const config = MULTI_SELECT_FIELDS[key];
+            if (!config) return;
+            const root = byId(config.rootId);
+            const toggle = byId(config.toggleId);
+            const menu = byId(config.menuId);
+            if (!root || !toggle || !menu) return;
+            root.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', String(open));
+            if (!open) {
+                menu.hidden = true;
+                clearMultiSelectTypeahead(key);
+                clearMultiSelectMenuPosition(menu);
+                if (menu.dataset.ported === 'true') {
+                    root.appendChild(menu);
+                    delete menu.dataset.ported;
+                }
+                return;
+            }
+            if (menu.parentElement !== document.body) {
+                document.body.appendChild(menu);
+                menu.dataset.ported = 'true';
+            }
+            menu.hidden = false;
+            positionMultiSelectMenu(key);
+            requestAnimationFrame(() => positionMultiSelectMenu(key));
+            if (focusOption) focusMultiSelectOption(key, focusPosition);
+        }
+
+        function closeAllMultiSelects(exceptKey = null) {
+            Object.keys(MULTI_SELECT_FIELDS).forEach(key => {
+                if (key === exceptKey) return;
+                setMultiSelectOpen(key, false);
+            });
+        }
+
+        const multiSelectTypeahead = Object.fromEntries(
+            Object.keys(MULTI_SELECT_FIELDS).map(key => [key, { query: '', timer: 0 }])
+        );
+
+        function clearMultiSelectTypeahead(key) {
+            const state = multiSelectTypeahead[key];
+            if (!state) return;
+            state.query = '';
+            if (state.timer) {
+                clearTimeout(state.timer);
+                state.timer = 0;
+            }
+            const config = MULTI_SELECT_FIELDS[key];
+            byId(config.menuId)
+                ?.querySelectorAll('.multi-select-option.is-typeahead-match')
+                .forEach(option => option.classList.remove('is-typeahead-match'));
+        }
+
+        function clearAllMultiSelectTypeahead() {
+            Object.keys(MULTI_SELECT_FIELDS).forEach(clearMultiSelectTypeahead);
+        }
+
+        function scheduleMultiSelectTypeaheadReset(key) {
+            const state = multiSelectTypeahead[key];
+            if (!state) return;
+            if (state.timer) clearTimeout(state.timer);
+            state.timer = setTimeout(() => {
+                state.query = '';
+                state.timer = 0;
+            }, 800);
+        }
+
+        function focusMultiSelectTypeaheadMatch(key, query) {
+            const config = MULTI_SELECT_FIELDS[key];
+            const menu = byId(config?.menuId);
+            if (!menu || !query) return;
+            const normalized = query.toLowerCase();
+            const options = Array.from(menu.querySelectorAll('.multi-select-option'));
+            options.forEach(option => option.classList.remove('is-typeahead-match'));
+            const match = options.find(option => {
+                const label = option.querySelector('span')?.textContent || '';
+                return label.toLowerCase().startsWith(normalized);
+            });
+            if (!match) return;
+            match.classList.add('is-typeahead-match');
+            match.querySelector('input')?.focus();
+            match.scrollIntoView({ block: 'nearest' });
+        }
+
+        function focusAfterMultiSelectToggle(key) {
+            const toggle = byId(MULTI_SELECT_FIELDS[key]?.toggleId);
+            if (!toggle || !filterPanel) return;
+            const focusable = Array.from(filterPanel.querySelectorAll(
+                'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(element => !element.closest('[hidden]'));
+            focusable[focusable.indexOf(toggle) + 1]?.focus();
+        }
+
+        function handleMultiSelectMenuNavigation(key, event) {
+            const checkboxes = multiSelectCheckboxes(key);
+            if (checkboxes.length === 0) return;
+            const currentIndex = checkboxes.indexOf(document.activeElement);
+
+            if (event.key === 'Tab') {
+                if (event.shiftKey && currentIndex === 0) {
+                    event.preventDefault();
+                    setMultiSelectOpen(key, false);
+                    byId(MULTI_SELECT_FIELDS[key].toggleId)?.focus();
+                } else if (!event.shiftKey && currentIndex === checkboxes.length - 1) {
+                    event.preventDefault();
+                    setMultiSelectOpen(key, false);
+                    focusAfterMultiSelectToggle(key);
+                }
+                return;
+            }
+
+            if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            let nextIndex;
+            if (event.key === 'Home') nextIndex = 0;
+            else if (event.key === 'End') nextIndex = checkboxes.length - 1;
+            else if (event.key === 'ArrowUp') nextIndex = currentIndex <= 0 ? checkboxes.length - 1 : currentIndex - 1;
+            else nextIndex = currentIndex < 0 || currentIndex === checkboxes.length - 1 ? 0 : currentIndex + 1;
+            checkboxes[nextIndex].focus();
+        }
+
+        function activeMultiSelectKey() {
+            return Object.keys(MULTI_SELECT_FIELDS).find(key => {
+                const config = MULTI_SELECT_FIELDS[key];
+                const root = byId(config.rootId);
+                const menu = byId(config.menuId);
+                return root?.contains(document.activeElement) || menu?.contains(document.activeElement);
+            }) || null;
+        }
+
+        function handleMultiSelectTypeaheadKeydown(event) {
+            const key = activeMultiSelectKey();
+            if (!key) return;
+            const config = MULTI_SELECT_FIELDS[key];
+            const toggle = byId(config.toggleId);
+            const typeahead = multiSelectTypeahead[key];
+            if (!toggle || !typeahead) return;
+            if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
+
+            if (event.key === 'Backspace') {
+                if (!typeahead.query) return;
+                event.preventDefault();
+                typeahead.query = typeahead.query.slice(0, -1);
+                if (typeahead.query) {
+                    focusMultiSelectTypeaheadMatch(key, typeahead.query);
+                    scheduleMultiSelectTypeaheadReset(key);
+                } else {
+                    clearMultiSelectTypeahead(key);
+                }
+                return;
+            }
+
+            const isSpace = event.key === ' ';
+            if (isSpace && event.target?.classList?.contains(config.checkboxClass)) return;
+            const isPrintable = event.key.length === 1 && (!isSpace || Boolean(typeahead.query));
+            if (!isPrintable) return;
+
+            event.preventDefault();
+            if (toggle.getAttribute('aria-expanded') !== 'true') {
+                closeAllMultiSelects(key);
+                setMultiSelectOpen(key, true);
+            }
+            typeahead.query += event.key;
+            focusMultiSelectTypeaheadMatch(key, typeahead.query);
+            scheduleMultiSelectTypeaheadReset(key);
+        }
+
+        function populateMultiSelect(key) {
+            const config = MULTI_SELECT_FIELDS[key];
+            const menu = byId(config?.menuId);
+            if (!config || !menu) return;
+            const currentValues = new Set(selectedMultiValues(key));
+            const values = Array.from(new Set(features()
+                .map(feature => String(feature.properties?.[config.property] || '').trim())
+                .filter(Boolean)))
+                .sort((a, b) => COLLATOR.compare(config.displayName(a), config.displayName(b)));
+            menu.replaceChildren();
+            values.forEach(value => {
+                const option = document.createElement('label');
+                option.className = 'multi-select-option';
+                option.setAttribute('role', 'option');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = `styled-checkbox ${config.checkboxClass}`;
+                checkbox.value = value;
+                checkbox.checked = currentValues.has(value);
+                option.setAttribute('aria-selected', String(checkbox.checked));
+                const text = document.createElement('span');
+                text.textContent = config.displayName(value);
+                option.append(checkbox, text);
+                menu.appendChild(option);
+            });
+            clearMultiSelectTypeahead(key);
+            syncMultiSelectLabel(key);
+            if (key === 'state') updateStateMonumentCount();
+        }
+
+        function updateStateMonumentCount() {
+            const countEl = byId('state-monument-count');
+            if (!countEl) return;
+            const selected = selectedMultiValues('state');
+            if (selected.length === 0) {
+                countEl.textContent = '';
+                return;
+            }
+            const selectedSet = new Set(selected);
+            const count = features().reduce((total, feature) => (
+                selectedSet.has(String(feature.properties?.State || '').trim()) ? total + 1 : total
+            ), 0);
+            countEl.textContent = `(${count} ${count === 1 ? 'monument' : 'monuments'})`;
         }
 
         function getRestrictedHidden() {
@@ -235,6 +673,9 @@
             Object.entries(SELECT_FIELDS).forEach(([key, config]) => {
                 state[key] = exactValue(fieldControl(key, config.ids)?.value);
             });
+            Object.keys(MULTI_SELECT_FIELDS).forEach(key => {
+                state[key] = selectedMultiValues(key);
+            });
             return state;
         }
 
@@ -247,13 +688,13 @@
                 documentation: 0
             };
             ['state', 'office', 'nationalPark', 'federalAgency', 'city', 'county']
-                .forEach(key => { if (state[key]) counts.place++; });
+                .forEach(key => { if (hasSelectFilter(state[key])) counts.place++; });
             if (state.hideRestricted) counts.place++;
             Object.entries(YEAR_FIELD_OPTIONS).forEach(([key, field]) => {
                 const range = state.years[key];
                 if (range[0] !== field.min || range[1] !== field.max) counts.time++;
             });
-            ['primaryForm', 'requestType'].forEach(key => { if (state[key]) counts.documentation++; });
+            ['primaryForm', 'requestType'].forEach(key => { if (hasSelectFilter(state[key])) counts.documentation++; });
             if (state.hasWebPdf) counts.documentation++;
             return counts;
         }
@@ -379,6 +820,11 @@
                 const select = fieldControl(key, config.ids);
                 if (select) select.value = '';
             });
+            Object.values(MULTI_SELECT_FIELDS).forEach(config => {
+                document.querySelectorAll(`.${config.checkboxClass}`).forEach(box => { box.checked = false; });
+            });
+            closeAllMultiSelects();
+            Object.keys(MULTI_SELECT_FIELDS).forEach(syncMultiSelectLabel);
             if (city) city.value = '';
             if (county) county.value = '';
             if (webPdf?.type === 'checkbox') webPdf.checked = false;
@@ -393,6 +839,7 @@
 
         function activateTab(tab, { animate = true } = {}) {
             if (!tab) return;
+            closeAllMultiSelects();
 
             const fromHeight = animate && tabContent ? tabContent.getBoundingClientRect().height : 0;
 
@@ -463,6 +910,8 @@
             destroy() {
                 if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
                 clearTabContentHeight();
+                closeAllMultiSelects();
+                clearAllMultiSelectTypeahead();
                 listeners.splice(0).forEach(remove => remove());
                 if (window._nhlFilterPanelController === controller) window._nhlFilterPanelController = null;
             }
@@ -498,7 +947,58 @@
         });
         document.querySelectorAll('#filter-panel input, #filter-panel select').forEach(control => {
             if (control === autoUpdateResults || control === modeSymbology) return;
+            if (Object.values(MULTI_SELECT_FIELDS).some(config => control.classList.contains(config.checkboxClass))) return;
             listen(control, control.type === 'text' || control.type === 'search' ? 'input' : 'change', onDraftChange);
+        });
+        Object.entries(MULTI_SELECT_FIELDS).forEach(([key, config]) => {
+            const toggle = byId(config.toggleId);
+            const menu = byId(config.menuId);
+            listen(toggle, 'click', event => {
+                event.preventDefault();
+                const willOpen = toggle?.getAttribute('aria-expanded') !== 'true';
+                closeAllMultiSelects(willOpen ? key : null);
+                setMultiSelectOpen(key, willOpen, { focusOption: willOpen });
+            });
+            listen(toggle, 'keydown', event => {
+                if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+                event.preventDefault();
+                closeAllMultiSelects(key);
+                setMultiSelectOpen(key, true, {
+                    focusOption: true,
+                    focusPosition: event.key === 'ArrowUp' ? 'last' : 'first'
+                });
+            });
+            listen(menu, 'change', event => {
+                if (!event.target?.classList?.contains(config.checkboxClass)) return;
+                event.target.closest('[role="option"]')
+                    ?.setAttribute('aria-selected', String(event.target.checked));
+                onDraftChange();
+            });
+            listen(menu, 'keydown', event => handleMultiSelectMenuNavigation(key, event));
+        });
+        listen(document, 'pointerdown', event => {
+            Object.entries(MULTI_SELECT_FIELDS).forEach(([key, config]) => {
+                const toggle = byId(config.toggleId);
+                const root = byId(config.rootId);
+                const menu = byId(config.menuId);
+                if (!root || toggle?.getAttribute('aria-expanded') !== 'true') return;
+                if (root.contains(event.target) || menu?.contains(event.target)) return;
+                setMultiSelectOpen(key, false);
+            });
+        });
+        listen(window, 'resize', repositionOpenMultiSelectMenus);
+        listen(document.querySelector('#filter-panel .filter-panel-body'), 'scroll', repositionOpenMultiSelectMenus);
+        listen(document, 'keydown', event => {
+            if (event.key === 'Escape') {
+                const openKey = Object.keys(MULTI_SELECT_FIELDS).find(key => (
+                    byId(MULTI_SELECT_FIELDS[key].toggleId)?.getAttribute('aria-expanded') === 'true'
+                ));
+                if (!openKey) return;
+                setMultiSelectOpen(openKey, false);
+                byId(MULTI_SELECT_FIELDS[openKey].toggleId)?.focus();
+                return;
+            }
+            handleMultiSelectTypeaheadKeydown(event);
         });
         document.querySelectorAll('.mode-filter, .supremacy-filter').forEach(checkbox => {
             const label = checkbox.closest('label');
@@ -513,7 +1013,7 @@
         });
         listen(filterPanel, 'keydown', event => {
             if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
-            if (event.target.closest('button, select, [role="tab"]')) return;
+            if (event.target.closest('button, select, [role="tab"], .multi-select, .multi-select-menu')) return;
             if (isAutoUpdateEnabled()) return;
             event.preventDefault();
             applyFilters();

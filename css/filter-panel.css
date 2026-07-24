@@ -354,12 +354,137 @@
     padding: 0.22rem 0.4rem;
 }
 
+#filter-panel select {
+    appearance: none;
+    padding-right: 1.2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23555' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.35rem center;
+    background-size: 0.75rem;
+}
+
+.state-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.state-monument-count {
+    flex: 0 0 auto;
+    color: #555;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    min-width: 5.5rem;
+}
+
+.multi-select {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.state-filter-row .multi-select {
+    flex: 1 1 auto;
+    width: auto;
+}
+
+.multi-select-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid #9a9a9a;
+    border-radius: var(--radius);
+    background: #fff;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    padding: 0.22rem 0.4rem;
+    text-align: left;
+}
+
+.multi-select-toggle:focus-visible {
+    border-color: var(--filter-gold);
+    outline: 2px solid color-mix(in srgb, var(--filter-gold) 28%, transparent);
+    outline-offset: 1px;
+}
+
+.multi-select-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.multi-select-caret {
+    flex: 0 0 auto;
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-left: 0.15rem;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23555' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    clip-path: none;
+    opacity: 1;
+}
+
+.multi-select-menu {
+    position: fixed;
+    z-index: 100;
+    max-height: min(12rem, calc(100vh - 1rem));
+    overflow: auto;
+    box-sizing: border-box;
+    border: 1px solid #9a9a9a;
+    border-radius: var(--radius);
+    background: #fff;
+    box-shadow: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.12);
+    padding: 0.25rem;
+}
+
+.multi-select-option {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    margin: 0;
+    padding: 0.22rem 0.3rem;
+    border-radius: calc(var(--radius) - 1px);
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    user-select: none;
+}
+
+.multi-select-option:hover,
+.multi-select-option.is-typeahead-match {
+    background: color-mix(in srgb, var(--filter-gold-light) 35%, #fff);
+}
+
+.multi-select-option .styled-checkbox {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
+.multi-select-option .styled-checkbox::before {
+    width: 0.48rem;
+    height: 0.48rem;
+}
+
 .switch-row-inline {
     margin: 0;
 }
 
 .range-filter + .range-filter {
     margin-top: 2rem;
+    margin-bottom: 2rem;
 }
 
 .range-filter-heading {
@@ -398,6 +523,10 @@
     font-size: 0.68rem;
     line-height: 1;
     padding: 0.2rem 0.4rem;
+}
+
+.reset-button:hover {
+    background: var(--slider-handle-hover);
 }
 
 .year-slider {
@@ -518,7 +647,7 @@
     display: flex;
     align-items: center;
     gap: 0.45rem;
-    margin-left: auto;
+    /* margin-left: auto; */
     width: fit-content;
     cursor: pointer;
     font-size: 0.8rem;

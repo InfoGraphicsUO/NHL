@@ -83,11 +83,26 @@
 
                         <section id="place-filter-panel" class="filter-tab-panel" role="tabpanel" aria-labelledby="filter-tab-place" hidden>
                             <div class="form-grid">
-                                <label for="state-filter">State</label>
-                                <select id="state-filter"><option value="">Any</option></select>
+                                <label for="state-filter-toggle">State</label>
+                                <div class="state-filter-row">
+                                    <div class="multi-select" id="state-filter" data-filter-field="state">
+                                        <button type="button" class="multi-select-toggle" id="state-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="state-filter-menu">
+                                            <span class="multi-select-label">Any</span>
+                                            <span class="multi-select-caret" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="multi-select-menu" id="state-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="state-filter-toggle" hidden></div>
+                                    </div>
+                                    <span id="state-monument-count" class="state-monument-count" aria-live="polite"></span>
+                                </div>
 
-                                <label for="nhl-office-filter">NHL Office</label>
-                                <select id="nhl-office-filter"><option value="">Any</option></select>
+                                <label for="nhl-office-filter-toggle">NHL Office</label>
+                                <div class="multi-select" id="nhl-office-filter" data-filter-field="office">
+                                    <button type="button" class="multi-select-toggle" id="nhl-office-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="nhl-office-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="nhl-office-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="nhl-office-filter-toggle" hidden></div>
+                                </div>
 
                                 <label for="city-filter">City</label>
                                 <input id="city-filter" type="search" placeholder="Filter by city..." autocomplete="off">
@@ -95,8 +110,14 @@
                                 <label for="county-filter">County</label>
                                 <input id="county-filter" type="search" placeholder="Filter by county..." autocomplete="off">
 
-                                <label for="national-park-filter">National Park</label>
-                                <select id="national-park-filter"><option value="">Any</option></select>
+                                <label for="national-park-filter-toggle">National Park</label>
+                                <div class="multi-select" id="national-park-filter" data-filter-field="nationalPark">
+                                    <button type="button" class="multi-select-toggle" id="national-park-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="national-park-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="national-park-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="national-park-filter-toggle" hidden></div>
+                                </div>
 
                                 <span>Restricted sites</span>
                                 <label class="switch-row switch-row-inline labeled-switch" for="restricted-sites-filter">
@@ -107,8 +128,14 @@
                                     </span>
                                 </label>
 
-                                <label for="federal-agency-filter">Federal Agency</label>
-                                <select id="federal-agency-filter"><option value="">Any</option></select>
+                                <label for="federal-agency-filter-toggle">Federal Agency</label>
+                                <div class="multi-select" id="federal-agency-filter" data-filter-field="federalAgency">
+                                    <button type="button" class="multi-select-toggle" id="federal-agency-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="federal-agency-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="federal-agency-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="federal-agency-filter-toggle" hidden></div>
+                                </div>
                             </div>
                         </section>
 
@@ -149,11 +176,23 @@
 
                         <section id="documentation-filter-panel" class="filter-tab-panel" role="tabpanel" aria-labelledby="filter-tab-documentation" hidden>
                             <div class="form-grid">
-                                <label for="primary-form-filter">Primary Form</label>
-                                <select id="primary-form-filter"><option value="">Any</option></select>
+                                <label for="primary-form-filter-toggle">Primary Form</label>
+                                <div class="multi-select" id="primary-form-filter" data-filter-field="primaryForm">
+                                    <button type="button" class="multi-select-toggle" id="primary-form-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="primary-form-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="primary-form-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="primary-form-filter-toggle" hidden></div>
+                                </div>
 
-                                <label for="request-type-filter">Request Type</label>
-                                <select id="request-type-filter"><option value="">Any</option></select>
+                                <label for="request-type-filter-toggle">Request Type</label>
+                                <div class="multi-select" id="request-type-filter" data-filter-field="requestType">
+                                    <button type="button" class="multi-select-toggle" id="request-type-filter-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="request-type-filter-menu">
+                                        <span class="multi-select-label">Any</span>
+                                        <span class="multi-select-caret" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="multi-select-menu" id="request-type-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="request-type-filter-toggle" hidden></div>
+                                </div>
 
                                 <span>Has Web PDF</span>
                                 <label class="switch-row switch-row-inline labeled-switch" for="web-pdf-filter">
@@ -173,7 +212,7 @@
                     <!-- <span id="filter-result-count" aria-live="polite">0 results</span> -->
                     <label class="auto-update-row" for="auto-update-results">
                         <input type="checkbox" class="styled-checkbox" id="auto-update-results">
-                        <span>Auto-update results</span>
+                        <span>Auto-update results <button type="button" class="info-button hover-info-trigger" aria-label="More info about Auto-update results" data-hover-info="Automatically updates results when filters are modified (may cause lag)"><i class="fa-light fa-circle-info" aria-hidden="true"></i></button></span>
                     </label>
                 </footer>
             </aside>

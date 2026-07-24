@@ -1,5 +1,5 @@
 // set to false to remove dev zoom display
-const SHOW_DEV_ZOOM_DISPLAY = true;
+const SHOW_DEV_ZOOM_DISPLAY = false;
 
 // map default zoom/center
 const NHL_MAP_HOME = {
