@@ -1,6 +1,7 @@
 (function() {
     'use strict';
 
+    // category fields stored as string flags in the source data
     const MODE_FIELDS = ['Acknowledged', 'Multiculturalism', 'Valorization', 'Erasure'];
     const SUPREMACY_FIELDS = [
         'Colonization',
@@ -10,6 +11,7 @@
         'State_Formation',
         'Racial_Capitalism'
     ];
+    // fields searched by the free text filter
     const SEARCH_FIELDS = [
         'Historic_Name',
         'ReferenceID',
@@ -19,6 +21,7 @@
         'County',
         'State'
     ];
+    // source values that need a public facing state name
     const STATE_NAMES = {
         AL: 'Alabama',
         AK: 'Alaska',
@@ -85,6 +88,7 @@
         'MOROCCO': 'Morocco'
     };
     const SELECT_FIELDS = {};
+    // field metadata shared by multi select menus and filter matching
     const MULTI_SELECT_FIELDS = {
         state: {
             property: 'State',
@@ -143,6 +147,7 @@
             .replace(/(^|[\s./&;,-])([a-z])/g, (_, boundary, letter) => boundary + letter.toUpperCase());
     }
 
+    // normalizes state codes and all caps source values for display
     function stateDisplayName(value) {
         const normalized = String(value || '').trim();
         if (!normalized) return '';
@@ -152,6 +157,7 @@
         return /^[A-Z0-9][A-Z0-9\s./'-]*$/.test(decoded) ? toTitleCase(decoded) : decoded;
     }
 
+    // normalizes all caps agency names without changing mixed case names
     function agencyDisplayName(value) {
         const decoded = displayValue(value);
         if (!decoded) return '';
@@ -185,6 +191,7 @@
         return JSON.parse(JSON.stringify(state));
     }
 
+    // accepts only web urls so malformed values do not count as documentation
     function validWebPdf(value) {
         try {
             const url = new URL(String(value || '').trim());
@@ -210,6 +217,7 @@
         return boxes.length ? boxes.filter(box => box.checked).map(box => box.value) : defaults.slice();
     }
 
+    // matches selected category flags with none representing no category flags
     function groupMatches(props, selected, fields) {
         if (selected.length === fields.length + 1 && selected.includes('None')) return true;
         if (selected.length === 0) return false;
@@ -217,13 +225,16 @@
         return selected.some(field => field === 'None' ? !hasCategory : props[field] === '1');
     }
 
+    // applies the saved draft state to one source feature
     function featureMatchesAppliedFilters(feature, state) {
         const props = feature?.properties || {};
         const query = state.search.trim().toLowerCase();
+
         if (query && !SEARCH_FIELDS.some(field => String(props[field] || '').toLowerCase().includes(query))) return false;
         if (!groupMatches(props, state.modes, MODE_FIELDS)) return false;
         if (!groupMatches(props, state.supremacy, SUPREMACY_FIELDS)) return false;
 
+        // exact value selects and multi select menus use separate state shapes
         for (const [key, config] of Object.entries(SELECT_FIELDS)) {
             if (state[key] && String(props[config.property] || '').trim() !== state[key]) return false;
         }
@@ -237,6 +248,7 @@
         if (state.hideRestricted && props.Restricted === '1') return false;
         if (state.hasWebPdf && !validWebPdf(props['Web PDF'])) return false;
 
+        // active ranges include both bounds and exclude form year multiple values when configured
         for (const [key, field] of Object.entries(YEAR_FIELD_OPTIONS)) {
             const [minimum, maximum] = state.years[key];
             if (minimum === field.min && maximum === field.max) continue;
@@ -247,6 +259,7 @@
         return true;
     }
 
+    // keeps result order stable when names or ids are similar
     function sortFeatures(features) {
         return features.slice().sort((a, b) => {
             const nameOrder = COLLATOR.compare(a.properties?.Historic_Name || '', b.properties?.Historic_Name || '');
@@ -254,11 +267,13 @@
         });
     }
 
+    // creates the filter controls and their shared results controller
     function setupFilterPanel(options = {}) {
         if (window._nhlFilterPanelController) return window._nhlFilterPanelController;
         const map = options.map;
         if (!map) throw new Error('setupFilterPanel requires a map instance.');
 
+        // shared source data and filter controls
         const features = () => map._landmarkSourceData?.features || [];
         const search = byId('monument-search');
         const filterPanel = byId('filter-panel');
@@ -283,12 +298,15 @@
         const tabButtons = Array.from(document.querySelectorAll('[id^="filter-tab-"]'));
         const tabContent = byId('filter-content');
         const listeners = [];
+
+        // tab height animation state
         let tabHeightFrame = 0;
         let prefersReducedMotion = false;
         try {
             prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         } catch (_) {}
 
+        // tracks listeners so destroy can remove every panel binding
         function listen(target, type, handler) {
             if (!target) return;
             target.addEventListener(type, handler);
@@ -301,6 +319,7 @@
             tabContent.classList.remove('is-animating-height');
         }
 
+        // eases between tab heights while respecting reduced motion
         function animateTabContentHeight(fromHeight, toHeight) {
             if (!tabContent || prefersReducedMotion || fromHeight === toHeight) {
                 clearTabContentHeight();
@@ -309,7 +328,7 @@
             if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
             tabContent.classList.add('is-animating-height');
             tabContent.style.height = `${fromHeight}px`;
-            // Force layout so the browser registers the starting height before easing.
+            // forces the starting height to render before the transition
             void tabContent.offsetHeight;
             tabHeightFrame = requestAnimationFrame(() => {
                 tabContent.style.height = `${toHeight}px`;
@@ -326,6 +345,7 @@
             applyButton.disabled = isAutoUpdateEnabled();
         }
 
+        // refreshes draft only UI before optionally applying the new filters
         function onDraftChange() {
             updateDraftIndicators();
             Object.keys(MULTI_SELECT_FIELDS).forEach(syncMultiSelectLabel);
@@ -337,6 +357,7 @@
             ? setupFilterYearSliders({ onDraftChange })
             : { getRanges: () => ({ formYear: [1950, 2026], nhlYear: [1937, 2026] }), reset() {} };
 
+        // rebuilds select options from the loaded source data
         function populateSelects() {
             Object.entries(SELECT_FIELDS).forEach(([key, config]) => {
                 const select = fieldControl(key, config.ids);
@@ -367,6 +388,7 @@
             return config ? selectedCheckboxFilterValues(`.${config.checkboxClass}`) : [];
         }
 
+        // summarizes selected values in the closed menu toggle
         function syncMultiSelectLabel(key) {
             const config = MULTI_SELECT_FIELDS[key];
             if (!config) return;
@@ -391,6 +413,7 @@
             menu.style.maxHeight = '';
         }
 
+        // positions the portaled menu above the toggle when space below is tight
         function positionMultiSelectMenu(key) {
             const config = MULTI_SELECT_FIELDS[key];
             const toggle = byId(config?.toggleId);
@@ -400,6 +423,7 @@
             const rect = toggle.getBoundingClientRect();
             const gap = 4;
             const viewportPadding = 8;
+            // menu heights use rem based pixel estimates for the current layout
             const preferredMax = 12 * 16;
             const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
             const spaceAbove = rect.top - gap - viewportPadding;
@@ -439,6 +463,7 @@
             checkbox?.focus();
         }
 
+        // moves open menus to body so panel overflow cannot clip them
         function setMultiSelectOpen(key, open, { focusOption = false, focusPosition = 'first' } = {}) {
             const config = MULTI_SELECT_FIELDS[key];
             if (!config) return;
@@ -497,6 +522,7 @@
             Object.keys(MULTI_SELECT_FIELDS).forEach(clearMultiSelectTypeahead);
         }
 
+        // clears a paused typeahead query after 800 milliseconds
         function scheduleMultiSelectTypeaheadReset(key) {
             const state = multiSelectTypeahead[key];
             if (!state) return;
@@ -507,6 +533,7 @@
             }, 800);
         }
 
+        // highlights and focuses the first option matching the typed prefix
         function focusMultiSelectTypeaheadMatch(key, query) {
             const config = MULTI_SELECT_FIELDS[key];
             const menu = byId(config?.menuId);
@@ -533,6 +560,7 @@
             focusable[focusable.indexOf(toggle) + 1]?.focus();
         }
 
+        // keeps keyboard focus within the menu while supporting arrow navigation
         function handleMultiSelectMenuNavigation(key, event) {
             const checkboxes = multiSelectCheckboxes(key);
             if (checkboxes.length === 0) return;
@@ -570,6 +598,7 @@
             }) || null;
         }
 
+        // routes printable keys to the multi select currently holding focus
         function handleMultiSelectTypeaheadKeydown(event) {
             const key = activeMultiSelectKey();
             if (!key) return;
@@ -607,6 +636,7 @@
             scheduleMultiSelectTypeaheadReset(key);
         }
 
+        // rebuilds menu options from source values while keeping current choices
         function populateMultiSelect(key) {
             const config = MULTI_SELECT_FIELDS[key];
             const menu = byId(config?.menuId);
@@ -637,6 +667,7 @@
             if (key === 'state') updateStateMonumentCount();
         }
 
+        // shows how many loaded monuments belong to the selected states
         function updateStateMonumentCount() {
             const countEl = byId('state-monument-count');
             if (!countEl) return;
@@ -659,7 +690,9 @@
             return String(value || '').toLowerCase() === 'hide';
         }
 
+        // reads form controls without changing the applied map and results state
         function readDraft() {
+            // shared controls are read first before configured fields are added
             const state = {
                 search: search?.value.trim() || '',
                 modes: selectedCheckboxValues('.mode-filter', [...MODE_FIELDS, 'None']),
@@ -670,15 +703,18 @@
                 hasWebPdf: Boolean(webPdf?.checked),
                 years: sliders.getRanges()
             };
+
             Object.entries(SELECT_FIELDS).forEach(([key, config]) => {
                 state[key] = exactValue(fieldControl(key, config.ids)?.value);
             });
+
             Object.keys(MULTI_SELECT_FIELDS).forEach(key => {
                 state[key] = selectedMultiValues(key);
             });
             return state;
         }
 
+        // counts active filters by tab for the visible badges
         function countActiveByTab(state) {
             const counts = {
                 modes: state.modes.length !== MODE_FIELDS.length + 1 ? 1 : 0,
@@ -715,6 +751,7 @@
             badge.classList.toggle('count-badge--zero', count === 0);
         }
 
+        // syncs the overall and per tab draft filter badges
         function updateDraftIndicators() {
             const state = readDraft();
             const byTab = countActiveByTab(state);
@@ -745,9 +782,11 @@
         let appliedState = null;
         let appliedResults = [];
 
+        // renders the currently applied features as selectable result cards
         function renderResults() {
             if (!resultsList) return;
             resultsList.replaceChildren();
+
             if (appliedResults.length === 0) {
                 const empty = document.createElement('p');
                 empty.className = 'results-empty';
@@ -755,9 +794,12 @@
                 resultsList.appendChild(empty);
                 return;
             }
+
             const fragment = document.createDocumentFragment();
             appliedResults.forEach(feature => {
                 const props = feature.properties || {};
+
+                // result identity and location
                 const card = document.createElement('article');
                 card.className = 'result-card results-card';
                 const text = document.createElement('div');
@@ -768,6 +810,7 @@
                 name.className = 'result-name';
                 name.textContent = props.Historic_Name || 'Unknown Site';
                 headingLine.appendChild(name);
+
                 if (props.ReferenceID) {
                     const reference = document.createElement('span');
                     reference.className = 'result-reference-id';
@@ -778,6 +821,8 @@
                 location.className = 'result-location';
                 location.textContent = formatLocation(props);
                 text.append(headingLine, location);
+
+                // selection routes through the controller before map selection
                 const details = document.createElement('button');
                 details.type = 'button';
                 details.className = 'result-view-details result-details-button';
@@ -792,20 +837,27 @@
             resultsList.appendChild(fragment);
         }
 
+        // uses mapbox all and empty sentinels to avoid building an id list for those cases
         function activeIdExpression(matches) {
             const all = features();
             if (matches.length === all.length) return typeof ALL_POINTS_FILTER !== 'undefined' ? ALL_POINTS_FILTER : ['==', ['literal', true], true];
             if (matches.length === 0) return typeof EMPTY_FILTER !== 'undefined' ? EMPTY_FILTER : ['==', ['id'], -1];
+
+            // partial matches use ids so every point layer shares the same filter
             return ['in', ['id'], ['literal', matches.map(feature => feature.id)]];
         }
 
+        // commits the draft state to the map layer and results list
         function applyFilters({ openResults = true, clearSelection = true } = {}) {
             appliedState = readDraft();
             appliedResults = sortFeatures(features().filter(feature => featureMatchesAppliedFilters(feature, appliedState)));
+
             if (clearSelection && typeof options.onClearSelection === 'function') options.onClearSelection();
             if (typeof setActivePointFilters === 'function') setActivePointFilters(map, activeIdExpression(appliedResults));
+
             setResultsCount(appliedResults.length);
             renderResults();
+
             if (openResults) controller.showResultsPanel();
             if (typeof options.onApply === 'function') {
                 options.onApply({ state: cloneState(appliedState), results: appliedResults.slice() });
@@ -813,9 +865,11 @@
             return appliedResults.slice();
         }
 
+        // restores every control to its unfiltered state
         function clearDraft() {
             if (search) search.value = '';
             document.querySelectorAll('.mode-filter, .supremacy-filter').forEach(box => { box.checked = true; });
+
             Object.entries(SELECT_FIELDS).forEach(([key, config]) => {
                 const select = fieldControl(key, config.ids);
                 if (select) select.value = '';
@@ -823,8 +877,10 @@
             Object.values(MULTI_SELECT_FIELDS).forEach(config => {
                 document.querySelectorAll(`.${config.checkboxClass}`).forEach(box => { box.checked = false; });
             });
+
             closeAllMultiSelects();
             Object.keys(MULTI_SELECT_FIELDS).forEach(syncMultiSelectLabel);
+
             if (city) city.value = '';
             if (county) county.value = '';
             if (webPdf?.type === 'checkbox') webPdf.checked = false;
@@ -833,10 +889,12 @@
             });
             if (restricted?.type === 'checkbox') restricted.checked = false;
             else if (restricted) restricted.value = restricted.querySelector?.('option[value="show"]') ? 'show' : '';
+
             sliders.reset();
             onDraftChange();
         }
 
+        // switches visible tab content and updates roving tab focus
         function activateTab(tab, { animate = true } = {}) {
             if (!tab) return;
             closeAllMultiSelects();
@@ -854,8 +912,7 @@
             });
 
             if (!animate || !tabContent) return;
-            
-            // drop any in-progress height so the natural size can be measured without easing
+            // removes the current height so the next natural height can be measured
             if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
             tabContent.classList.remove('is-animating-height');
             tabContent.style.height = '';
@@ -877,6 +934,7 @@
             });
         });
 
+        // public panel API used by map and detail interactions
         const controller = {
             applyFilters,
             clearDraft,
@@ -901,12 +959,14 @@
             },
             getAppliedResults: () => appliedResults.slice(),
             getAppliedState: () => appliedState ? cloneState(appliedState) : null,
+            // reapplies the saved state after the source data changes
             refreshResults() {
                 appliedResults = sortFeatures(features().filter(feature => featureMatchesAppliedFilters(feature, appliedState || readDraft())));
                 setResultsCount(appliedResults.length);
                 renderResults();
                 return appliedResults.slice();
             },
+            // returns portaled menus and removes all panel side effects
             destroy() {
                 if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
                 clearTabContentHeight();
@@ -920,6 +980,7 @@
         controller.restoreResults = controller.showResultsPanel;
         controller.closeResults = controller.hideResultsPanel;
 
+        // build controls before applying the initial unfiltered state
         populateSelects();
         activateTab(tabButtons.find(tab => tab.getAttribute('aria-selected') === 'true') || tabButtons[0], { animate: false });
         updateDraftIndicators();
@@ -1018,7 +1079,7 @@
             event.preventDefault();
             applyFilters();
         });
-        // Initialize the map and count only after the source has populated.
+        // source data is ready before the initial map filter and result count
         window._nhlFilterPanelController = controller;
         syncApplyButtonState();
         applyFilters({ openResults: false, clearSelection: false });

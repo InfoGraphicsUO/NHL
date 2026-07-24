@@ -1,5 +1,5 @@
 
-// flyTo on point select only when current zoom is below this level
+// only recenter selected points when the map is still at a broad view
 const FLY_TO_MAX_ZOOM = 7;
 
 $(document).ready(function() {
@@ -8,6 +8,7 @@ $(document).ready(function() {
     updateSidePanelVisibility();
 });
 
+// builds the compact location line shown in landmark details
 function formatCityState(props) {
     const city = (props.City || '').trim();
     const state = (props.State || '').trim();
@@ -15,11 +16,13 @@ function formatCityState(props) {
     return city || state || '';
 }
 
+// hides placeholder addresses that are not useful to visitors
 function hasUsableAddress(address) {
     const value = (address || '').trim();
     return value.length > 0 && !/^address restricted$/i.test(value);
 }
 
+// reads a css duration and converts seconds to milliseconds for settimeout
 function getCssDurationMs(variableName, fallbackMs) {
     const value = getComputedStyle(document.documentElement)
         .getPropertyValue(variableName)
@@ -31,6 +34,7 @@ function getCssDurationMs(variableName, fallbackMs) {
     return Number.isFinite(parsed) ? parsed : fallbackMs;
 }
 
+// briefly shows the copied confirmation beside a reference id
 function showCopyFeedback(button) {
     const feedback = button.parentElement.querySelector('.copy-feedback');
     if (!feedback) return;
@@ -50,8 +54,9 @@ function showCopyFeedback(button) {
     }, 1500);
 }
 
+// accepts only usable external links from the web pdf column
 function isValidWebPdfUrl(value) {
-    // some strings in web pdf col are just text notes and not urls
+    // some web pdf values are notes instead of urls
     try {
         const url = new URL(String(value).trim());
         return url.protocol === 'http:' || url.protocol === 'https:';
@@ -60,9 +65,10 @@ function isValidWebPdfUrl(value) {
     }
 }
 
+// finds the representation modes enabled on a landmark
 function getActiveModesFromProps(props) {
     const modeFilters = Array.from(document.querySelectorAll('.mode-filter'));
-    const activeModes = modeFilters 
+    const activeModes = modeFilters
         .filter(({ value }) => value !== 'None' && props[value] === '1')
         .map(checkbox => ({
             key: checkbox.value,
@@ -80,8 +86,8 @@ function getActiveModesFromProps(props) {
     }];
 }
 
+// returns the representation pills used in the detail panel
 function renderModePillsHtml(modes) {
-    // renders the 'pills' for modes of representation in the side panel
     const pills = modes.map(({ key, label }) =>
         `<span class="mode-pill" data-mode="${key}">${label}</span>`
     ).join('');
@@ -93,6 +99,7 @@ function renderHoverInfoIconHtml(label) {
     return `<span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about ${label}" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span>`;
 }
 
+// wires mouse and keyboard events to one shared hover tooltip
 function setupHoverInfoIcons(root = document) {
     if (typeof createHoverInfoBox !== 'function') return;
 
@@ -100,16 +107,18 @@ function setupHoverInfoIcons(root = document) {
     setupHoverInfoIcons._infoBox = infoBox;
 
     root.querySelectorAll('.hover-info-trigger').forEach(trigger => {
-        if (trigger._hoverInfoInitialized) return; // only initialize once per trigger
+        // avoid duplicate listeners when a detail panel rerenders
+        if (trigger._hoverInfoInitialized) return;
         trigger._hoverInfoInitialized = true;
 
         const showInfo = (event) => {
-            infoBox.show({ infoLines: [trigger.dataset.hoverInfo || 'Placeholder text'] }); //display placeholder if no info is provided
+            infoBox.show({ infoLines: [trigger.dataset.hoverInfo || 'Placeholder text'] });
+
             if (event?.clientX && event?.clientY) {
-                // position the info box relative to the mouse cursor
+                // pointer events keep the tooltip beside the cursor
                 infoBox.setPosition(event.clientX, event.clientY);
             } else {
-                // position the info box relative to the trigger
+                // keyboard focus anchors the tooltip to its trigger
                 const rect = trigger.getBoundingClientRect();
                 infoBox.setPosition(rect.left + rect.width / 2, rect.top);
             }
@@ -125,13 +134,14 @@ function setupHoverInfoIcons(root = document) {
     });
 }
 
+// connects map selection events to the shared results and detail panel
 function setupUI() {
-    // map instance and ui elements
     const map = window._nhlMapInstance;
     if (!map) {
         console.warn('Map instance not found');
         return;
     }
+    // cache the shared shell elements used during selection changes
     const sidePanel = document.getElementById('side-panel');
     const resultsView = document.getElementById('results-view');
     const detailView = document.getElementById('detail-view');
@@ -148,6 +158,7 @@ function setupUI() {
 
     let sidePanelSwitchToken = 0;
 
+    // fills landmark metadata and resets address disclosure state
     function fillSidePanelContent(props) {
         if (spTitle) spTitle.textContent = props.Historic_Name || 'Unknown Site';
         const cityState = formatCityState(props);
@@ -159,6 +170,7 @@ function setupUI() {
             spCityState.textContent = cityState;
         }
 
+        // only make the location row interactive for real addresses
         if (addressExpandBtn && spAddress && locationLine) {
             addressExpandBtn.hidden = !canShowAddress;
             addressExpandBtn.innerHTML = '<i class="fa-duotone fa-regular fa-angle-down"></i>';
@@ -203,6 +215,7 @@ function setupUI() {
             addressText.textContent = canShowAddress ? address : '';
         }
 
+        // rebuild details so each selection uses current landmark properties
         const spDesc = document.getElementById('sp-desc');
         if (spDesc) {
             const refId = props.ReferenceID || 'Unknown';
@@ -258,9 +271,10 @@ function setupUI() {
         updateSidePanelVisibility();
     }
 
+    // selects one map feature and opens its detail view
     function selectLandmark(feature) {
-        // select the landmark and update the map and side panel
         if (!feature?.properties || !feature?.geometry?.coordinates) return;
+
         const props = feature.properties;
         const coordinates = feature.geometry.coordinates.slice();
         const mapInstance = window._nhlMapInstance;
@@ -274,6 +288,7 @@ function setupUI() {
             setSelectedPointFilters(mapInstance);
         }
 
+        // the filter controller owns the shared results and detail shell
         const filterController = window._nhlFilterPanelController || window._filterPanelController;
         if (typeof filterController?.showDetail === 'function') {
             filterController.showDetail(feature);
@@ -283,6 +298,7 @@ function setupUI() {
             sidePanel?.classList.add('is-open');
         }
 
+        // preserve a close view while helping users orient from a wide view
         if (map.getZoom() < FLY_TO_MAX_ZOOM) {
             map.flyTo({
                 center: coordinates,
@@ -292,6 +308,7 @@ function setupUI() {
 
         const switchToken = ++sidePanelSwitchToken;
 
+        // wait for the outgoing content fade before replacing it
         if (isContentSwitch) {
             sidePanel.classList.add('is-switching');
             setTimeout(() => {
@@ -309,6 +326,7 @@ function setupUI() {
         fillSidePanelContent(props);
     }
 
+    // clears map selection and returns the shared shell to results
     function clearLandmarkSelection({ restoreResults = true } = {}) {
         sidePanelSwitchToken += 1;
         map._selectedFeatureId = null;
@@ -323,14 +341,14 @@ function setupUI() {
         updateSidePanelVisibility();
     }
 
+    // starts filtering only after the map source is available
     function onSourceReady() {
         if (typeof window.setupFilterPanel !== 'function') {
             console.warn('Filter panel controller not found');
             return;
         }
 
-        // The controller owns draft/applied filtering and results rendering. UI keeps
-        // landmark selection and detail rendering in one place for map and card clicks.
+        // filtering owns draft and applied state while ui owns landmark selection
         window._filterPanelController = window.setupFilterPanel({
             map,
             onSelectLandmark: selectLandmark,
@@ -338,6 +356,7 @@ function setupUI() {
         });
     }
 
+    // source data can arrive after the map style has already loaded
     if (map.isStyleLoaded() && map.getSource('landmark-point-data')) {
         onSourceReady();
     } else {
@@ -349,8 +368,7 @@ function setupUI() {
         });
     }
 
-    // Back supersedes the old detail close button. Keep this fallback so older
-    // markup still returns to results during a rolling deployment.
+    // keep legacy markup functional while the shared detail back button rolls out
     if (spClose && spClose !== detailBack && !detailBack) {
         spClose.addEventListener('click', () => clearLandmarkSelection());
     }
@@ -370,6 +388,7 @@ function setupUI() {
     map.on('click', 'landmarks-selected', handleLandmarkClick);
 }
 
+// flags titles that wrap so the detail header can adjust its spacing
 function updateSidePanelHeaderMargin() {
     const title = document.getElementById('side-panel-title');
     const header = title?.closest('.side-panel-header');
@@ -386,6 +405,7 @@ function updateSidePanelHeaderMargin() {
     header.classList.toggle('multiline', range.getClientRects().length > 1);
 }
 
+// keeps the side panel aligned with selected feature and results state
 function updateSidePanelVisibility() {
     const sidePanel = document.getElementById('side-panel');
     const resultsView = document.getElementById('results-view');
@@ -404,8 +424,7 @@ function updateSidePanelVisibility() {
     sidePanel.classList.remove('is-switching');
     if (detailView) detailView.hidden = true;
 
-    // With the shared shell, the filter/results controller owns whether the
-    // panel is open. Preserve the legacy close behavior only for old markup.
+    // the filter controller owns panel visibility when the shared results shell exists
     if (!resultsView) {
         sidePanel.classList.remove('is-open');
     }

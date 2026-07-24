@@ -1,5 +1,7 @@
+// keep both year filters aligned with the current data range
 const YEAR_SLIDER_MAX = 2026;
 
+// each field keeps its data property and matching markup in one place
 const YEAR_FIELD_OPTIONS = {
     formYear: {
         key: 'formYear',
@@ -58,6 +60,7 @@ function clampYear(value, field) {
     return Math.min(field.max, Math.max(field.min, Math.round(value)));
 }
 
+// creates one configurable range or specific year slider
 function createYearSlider(field, onDraftChange) {
     const element = firstElementById(field.elementIds);
     if (!element || typeof noUiSlider === 'undefined') return null;
@@ -81,6 +84,7 @@ function createYearSlider(field, onDraftChange) {
         return values.length === 1 ? [values[0], values[0]] : values;
     }
 
+    // mirrors slider values into editable handle inputs without interrupting typing
     function syncInputs() {
         const values = range();
         tooltipInputs.forEach((input, index) => {
@@ -89,6 +93,7 @@ function createYearSlider(field, onDraftChange) {
         });
     }
 
+    // validates typed years and keeps range handles from crossing
     function commitInput(input, index) {
         const value = input.value.trim();
         const number = /^\d+$/.test(value) ? Number(value) : NaN;
@@ -113,6 +118,7 @@ function createYearSlider(field, onDraftChange) {
         element.noUiSlider.set([minimum, maximum]);
     }
 
+    // adds accessible editable year inputs to each slider handle
     function setupTooltips() {
         tooltipInputs = [];
         element.querySelectorAll('.noUi-handle').forEach((handle, index) => {
@@ -148,12 +154,13 @@ function createYearSlider(field, onDraftChange) {
         });
     }
 
+    // binds events after each slider rebuild
     function bindSliderEvents() {
         element.noUiSlider.off('.filterPanel');
         element.noUiSlider.on('update.filterPanel', syncInputs);
+
         if (typeof onDraftChange === 'function') {
-            // `set` covers pointer/keyboard changes plus editable year inputs and Reset.
-            // Unlike `update`, registering this handler does not fire during setup.
+            // set catches slider and typed input changes without firing during setup
             element.noUiSlider.on('set.filterPanel', onDraftChange);
         }
         syncInputs();
@@ -166,6 +173,7 @@ function createYearSlider(field, onDraftChange) {
         );
     }
 
+    // rebuilds the slider when its mode changes
     function buildSlider(start) {
         if (element.noUiSlider) element.noUiSlider.destroy();
         tooltipInputs = [];
@@ -178,6 +186,7 @@ function createYearSlider(field, onDraftChange) {
         element.classList.toggle('is-specific', specific);
         updateAriaLabel();
 
+        // range mode has two connected handles while specific mode has one
         noUiSlider.create(element, {
             start: specific ? startValue[0] : startValue,
             step: 1,
@@ -195,6 +204,7 @@ function createYearSlider(field, onDraftChange) {
         bindSliderEvents();
     }
 
+    // switches between an inclusive range and one selected year
     function setMode(nextMode, { preserveValue = true } = {}) {
         const next = nextMode === 'specific' ? 'specific' : 'range';
         if (next === mode && element.noUiSlider) {
@@ -207,6 +217,7 @@ function createYearSlider(field, onDraftChange) {
         if (modeToggle) modeToggle.checked = mode === 'specific';
 
         if (mode === 'specific') {
+            // use the midpoint so a collapsed range has a predictable selected year
             const year = preserveValue
                 ? clampYear(Math.round((current[0] + current[1]) / 2), field)
                 : clampYear(Math.round((field.min + field.max) / 2), field);
@@ -218,6 +229,7 @@ function createYearSlider(field, onDraftChange) {
         if (typeof onDraftChange === 'function') onDraftChange();
     }
 
+    // restores the full field range and its two handle mode
     function resetSlider() {
         mode = 'range';
         if (modeToggle) modeToggle.checked = false;
@@ -258,6 +270,7 @@ function createYearSlider(field, onDraftChange) {
     };
 }
 
+// creates both independent year filters for the filter panel
 function setupFilterYearSliders({ onDraftChange } = {}) {
     const sliders = {};
     Object.values(YEAR_FIELD_OPTIONS).forEach(field => {
@@ -291,7 +304,7 @@ function setupFilterYearSliders({ onDraftChange } = {}) {
     };
 }
 
-// Compatibility helpers for callers from the former single-slider panel.
+// keeps older single slider callers working during the panel transition
 function setupYearSliderPanel() {
     return setupFilterYearSliders().elements.formYear;
 }
