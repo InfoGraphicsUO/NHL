@@ -21,6 +21,13 @@
         'County',
         'State'
     ];
+    // fields searched by the results-panel search box
+    const RESULTS_SEARCH_FIELDS = [
+        'Historic_Name',
+        'ReferenceID',
+        'City',
+        'State'
+    ];
     // source values that need a public facing state name
     const STATE_NAMES = {
         AL: 'Alabama',
@@ -157,6 +164,77 @@
         return /^[A-Z0-9][A-Z0-9\s./'-]*$/.test(decoded) ? toTitleCase(decoded) : decoded;
     }
 
+    function escapeRegExp(value) {
+        return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // case-insensitive substring match across name, reference, city, state abbr, and full state name
+    function featureMatchesResultsQuery(feature, query) {
+        const normalized = String(query || '').trim().toLowerCase();
+        if (!normalized) return true;
+        const props = feature.properties || {};
+        if (RESULTS_SEARCH_FIELDS.some(field => String(props[field] || '').toLowerCase().includes(normalized))) {
+            return true;
+        }
+        return stateDisplayName(props.State).toLowerCase().includes(normalized);
+    }
+
+    // wraps every case-insensitive match of query in a highlight mark
+    function appendHighlightedText(container, text, query) {
+        const value = String(text || '');
+        const normalized = String(query || '').trim();
+        if (!normalized || !value) {
+            container.appendChild(document.createTextNode(value));
+            return;
+        }
+
+        const pattern = new RegExp(escapeRegExp(normalized), 'gi');
+        let lastIndex = 0;
+        let match;
+        while ((match = pattern.exec(value)) !== null) {
+            if (match.index > lastIndex) {
+                container.appendChild(document.createTextNode(value.slice(lastIndex, match.index)));
+            }
+            const mark = document.createElement('mark');
+            mark.className = 'result-search-highlight';
+            mark.textContent = match[0];
+            container.appendChild(mark);
+            lastIndex = match.index + match[0].length;
+            if (match[0].length === 0) pattern.lastIndex += 1;
+        }
+        if (lastIndex < value.length) {
+            container.appendChild(document.createTextNode(value.slice(lastIndex)));
+        }
+    }
+
+    // builds "City, ST" with live search highlights; full state-name matches highlight the abbreviation
+    function appendHighlightedLocation(container, props, query) {
+        const city = String(props.City || '').trim();
+        const state = String(props.State || '').trim();
+        if (!city && !state) {
+            container.appendChild(document.createTextNode('Location unavailable'));
+            return;
+        }
+
+        const normalized = String(query || '').trim().toLowerCase();
+        if (city) appendHighlightedText(container, city, query);
+        if (city && state) container.appendChild(document.createTextNode(', '));
+        if (!state) return;
+
+        const abbrMatches = normalized && state.toLowerCase().includes(normalized);
+        const nameMatches = normalized && stateDisplayName(state).toLowerCase().includes(normalized);
+        if (abbrMatches) {
+            appendHighlightedText(container, state, query);
+        } else if (nameMatches) {
+            const mark = document.createElement('mark');
+            mark.className = 'result-search-highlight';
+            mark.textContent = state;
+            container.appendChild(mark);
+        } else {
+            container.appendChild(document.createTextNode(state));
+        }
+    }
+
     // normalizes all caps agency names without changing mixed case names
     function agencyDisplayName(value) {
         const decoded = displayValue(value);
@@ -291,6 +369,7 @@
         const detailView = byId('detail-view');
         const resultsList = byId('results-list');
         const resultsCount = byId('results-count');
+        const resultsSearch = byId('results-search');
         const compactToggle = byId('compact-results-toggle');
         const closeButton = byId('results-panel-close');
         const detailBack = byId('detail-back');
@@ -298,6 +377,7 @@
         const tabButtons = Array.from(document.querySelectorAll('[id^="filter-tab-"]'));
         const tabContent = byId('filter-content');
         const listeners = [];
+        let resultsQuery = '';
 
         // tab height animation state
         let tabHeightFrame = 0;
@@ -774,9 +854,18 @@
             if (resultsCount) resultsCount.textContent = String(count);
         }
 
+        function setHeaderResultsCount(count) {
+            if (resultsCount) resultsCount.textContent = String(count);
+        }
+
         function formatLocation(props) {
             const place = [props.City, props.State].map(value => String(value || '').trim()).filter(Boolean);
             return place.join(', ') || 'Location unavailable';
+        }
+
+        function getVisibleResults() {
+            if (!resultsQuery.trim()) return appliedResults;
+            return appliedResults.filter(feature => featureMatchesResultsQuery(feature, resultsQuery));
         }
 
         let appliedState = null;
@@ -787,6 +876,9 @@
             if (!resultsList) return;
             resultsList.replaceChildren();
 
+            const visibleResults = getVisibleResults();
+            setHeaderResultsCount(visibleResults.length);
+
             if (appliedResults.length === 0) {
                 const empty = document.createElement('p');
                 empty.className = 'results-empty';
@@ -795,8 +887,17 @@
                 return;
             }
 
+            if (visibleResults.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'results-empty';
+                empty.textContent = 'No results match your search.';
+                resultsList.appendChild(empty);
+                return;
+            }
+
             const fragment = document.createDocumentFragment();
-            appliedResults.forEach(feature => {
+            const highlightQuery = resultsQuery.trim();
+            visibleResults.forEach(feature => {
                 const props = feature.properties || {};
 
                 // result identity and location
@@ -808,18 +909,24 @@
                 headingLine.className = 'result-card-heading result-card-title';
                 const name = document.createElement('span');
                 name.className = 'result-name';
-                name.textContent = props.Historic_Name || 'Unknown Site';
+                appendHighlightedText(name, props.Historic_Name || 'Unknown Site', highlightQuery);
                 headingLine.appendChild(name);
 
                 if (props.ReferenceID) {
                     const reference = document.createElement('span');
                     reference.className = 'result-reference-id';
-                    reference.textContent = ` (${props.ReferenceID})`;
+                    reference.appendChild(document.createTextNode(' ('));
+                    appendHighlightedText(reference, props.ReferenceID, highlightQuery);
+                    reference.appendChild(document.createTextNode(')'));
                     headingLine.appendChild(reference);
                 }
                 const location = document.createElement('div');
                 location.className = 'result-location';
-                location.textContent = formatLocation(props);
+                if (highlightQuery) {
+                    appendHighlightedLocation(location, props, highlightQuery);
+                } else {
+                    location.textContent = formatLocation(props);
+                }
                 text.append(headingLine, location);
 
                 // selection routes through the controller before map selection
@@ -991,6 +1098,10 @@
         listen(applyButton, 'click', applyFilters);
         listen(clearButton, 'click', clearDraft);
         listen(closeButton, 'click', () => controller.hideResultsPanel());
+        listen(resultsSearch, 'input', () => {
+            resultsQuery = resultsSearch.value || '';
+            renderResults();
+        });
         listen(compactToggle, 'change', () => {
             resultsView?.classList.toggle('is-compact', compactToggle.checked);
             shell?.classList.toggle('results-compact', compactToggle.checked);
