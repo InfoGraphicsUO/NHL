@@ -553,7 +553,6 @@
         function onDraftChange() {
             updateDraftIndicators();
             Object.keys(MULTI_SELECT_FIELDS).forEach(syncMultiSelectLabel);
-            updateStateMonumentCount();
             if (isAutoUpdateEnabled()) applyFilters();
         }
 
@@ -868,23 +867,6 @@
             });
             clearMultiSelectTypeahead(key);
             syncMultiSelectLabel(key);
-            if (key === 'state') updateStateMonumentCount();
-        }
-
-        // shows how many loaded monuments belong to the selected states
-        function updateStateMonumentCount() {
-            const countEl = byId('state-monument-count');
-            if (!countEl) return;
-            const selected = selectedMultiValues('state');
-            if (selected.length === 0) {
-                countEl.textContent = '';
-                return;
-            }
-            const selectedSet = new Set(selected);
-            const count = features().reduce((total, feature) => (
-                selectedSet.has(String(feature.properties?.State || '').trim()) ? total + 1 : total
-            ), 0);
-            countEl.textContent = `(${count} ${count === 1 ? 'monument' : 'monuments'})`;
         }
 
         function getRestrictedHidden() {

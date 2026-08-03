@@ -363,31 +363,10 @@
     background-size: 0.75rem;
 }
 
-.state-filter-row {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
-}
-
-.state-monument-count {
-    flex: 0 0 auto;
-    color: #555;
-    font-size: 0.72rem;
-    line-height: 1.2;
-    white-space: nowrap;
-    min-width: 5.5rem;
-}
-
 .multi-select {
     position: relative;
     width: 100%;
     min-width: 0;
-}
-
-.state-filter-row .multi-select {
-    flex: 1 1 auto;
-    width: auto;
 }
 
 .multi-select-toggle {
