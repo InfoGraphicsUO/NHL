@@ -1,0 +1,111 @@
+.range-filter + .range-filter {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.range-filter-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.8rem;
+}
+
+.range-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 0 0 auto;
+}
+
+.reset-button {
+    border: 1px solid #888;
+    border-radius: var(--radius);
+    background: #fff;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.68rem;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+}
+
+.reset-button:hover {
+    background: var(--slider-handle-hover);
+}
+
+.year-slider {
+    width: calc(100% - 5rem);
+    margin: 0 2.5rem 1rem;
+}
+
+.year-slider.noUi-target {
+    height: 3px;
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--slider-track);
+    box-shadow: none;
+}
+
+.year-slider .noUi-connect {
+    background: var(--filter-gold);
+}
+
+.year-slider .noUi-handle {
+    top: -7px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--slider-handle);
+    box-shadow: none;
+    cursor: grab;
+}
+
+.year-slider .noUi-handle::before,
+.year-slider .noUi-handle::after {
+    display: none;
+}
+
+.year-slider .noUi-tooltip {
+    min-width: 2.6rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #555;
+    font-size: 0.68rem;
+    text-align: center;
+}
+
+.year-slider .year-tooltip-input {
+    width: 2.6rem;
+    box-sizing: border-box;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    padding: 0;
+}
+
+.year-slider .year-tooltip-input:focus {
+    outline: 1px solid var(--filter-gold);
+    outline-offset: 1px;
+    background: #fff;
+}
+
+.year-slider .noUi-handle-lower .noUi-tooltip {
+    top: 1rem;
+    bottom: auto;
+}
+
+.year-slider .noUi-handle-upper .noUi-tooltip {
+    top: auto;
+    bottom: 1rem;
+}
+
+.year-slider.is-specific .noUi-handle .noUi-tooltip {
+    top: auto;
+    bottom: 1rem;
+}

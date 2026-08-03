@@ -11,8 +11,11 @@
         <script defer src="https://kit.fontawesome.com/be4ea184d4.js" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 
-        <script src="js/slider-panel.js"></script>
-        <script src="js/filter-panel.js?v=20260803-significance-2"></script>
+        <!-- shared helpers load before the panel modules that consume them -->
+        <script src="js/landmark-utils.js?v=20260803-modules"></script>
+        <script src="js/slider.js?v=20260803-modules"></script>
+        <script src="js/results-panel.js?v=20260803-modules"></script>
+        <script src="js/filter-panel.js?v=20260803-modules"></script>
         <script src="js/ui.js"></script>
         <script src="js/hover-info-box.js"></script>
         <script src="js/data-actions.js?v=20260803-export"></script>
@@ -25,9 +28,11 @@
 
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="css/map.css">
-        <link rel="stylesheet" href="css/filter-panel.css?v=20260803-significance-2">
+        <link rel="stylesheet" href="css/filter-panel.css?v=20260803-modules">
+        <link rel="stylesheet" href="css/slider.css?v=20260803-modules">
         <link rel="stylesheet" href="css/hover-info-box.css">
-        <link rel="stylesheet" href="css/side-panel.css?v=20260803-export-2">
+        <link rel="stylesheet" href="css/side-panel.css?v=20260803-modules">
+        <link rel="stylesheet" href="css/results-panel.css?v=20260803-modules">
     </head>
     <body>
         <main>
@@ -191,6 +196,7 @@
                                     <div class="multi-select-menu" id="request-type-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="request-type-filter-toggle" hidden></div>
                                 </div>
 
+                                <!-- combined search swaps for source-specific fields when separation is enabled -->
                                 <label for="significance-filter" data-significance-mode="combined">Area of significance</label>
                                 <input id="significance-filter" data-significance-mode="combined" type="search" placeholder="Search either source..." autocomplete="off">
 
@@ -257,6 +263,7 @@
                                     <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="id">ID number</button>
                                 </div>
                             </div>
+                            <!-- data-export-format maps each menu option to its handler in filter-panel.js -->
                             <div class="results-export">
                                 <button id="results-export-toggle" class="results-export-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="results-export-menu">
                                     <span>Export</span>

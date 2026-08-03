@@ -1,16 +1,6 @@
 (function() {
     'use strict';
 
-    // category fields stored as string flags in the source data
-    const MODE_FIELDS = ['Acknowledged', 'Multiculturalism', 'Valorization', 'Erasure'];
-    const SUPREMACY_FIELDS = [
-        'Colonization',
-        'Nation_Building',
-        'Settler_Colonization',
-        'Slavery',
-        'State_Formation',
-        'Racial_Capitalism'
-    ];
     // fields searched by the free text filter
     const SEARCH_FIELDS = [
         'Historic_Name',
@@ -21,98 +11,10 @@
         'County',
         'State'
     ];
-    // fields searched by the results-panel search box
-    const RESULTS_SEARCH_FIELDS = [
-        'Historic_Name',
-        'ReferenceID',
-        'City',
-        'State'
-    ];
-    // fields searched by the best match algorithm
-    const BEST_MATCH_SEARCH_FIELDS = [
-        'Historic_Name',
-        'Other_Name_s_',
-        'Multiple_Name',
-        'ReferenceID',
-        'City',
-        'County',
-        'State'
-    ];
+    // nomination keeps the misspelling used by the published spreadsheet header
     const SIGNIFICANCE_FIELDS = {
         metadata: 'Areas_of_Significance_Metadata',
         nomination: 'Areas_of_Signifance_Nomination_Forms'
-    };
-    // source values that need a public facing state / territory name
-    // aliases (full names and codes) share one label so State/Territory sort groups correctly
-    const STATE_NAMES = {
-        AL: 'Alabama',
-        AK: 'Alaska',
-        AS: 'American Samoa',
-        'AMERICAN SAMOA': 'American Samoa',
-        AZ: 'Arizona',
-        AR: 'Arkansas',
-        CA: 'California',
-        CO: 'Colorado',
-        CT: 'Connecticut',
-        DE: 'Delaware',
-        DC: 'District of Columbia',
-        FL: 'Florida',
-        GA: 'Georgia',
-        GU: 'Guam',
-        HI: 'Hawaii',
-        ID: 'Idaho',
-        IL: 'Illinois',
-        IN: 'Indiana',
-        IA: 'Iowa',
-        KS: 'Kansas',
-        KY: 'Kentucky',
-        LA: 'Louisiana',
-        ME: 'Maine',
-        MD: 'Maryland',
-        MH: 'Marshall Islands',
-        'MARSHALL ISLANDS': 'Marshall Islands',
-        MA: 'Massachusetts',
-        MI: 'Michigan',
-        FM: 'Federated States of Micronesia',
-        'FED. STATES': 'Federated States of Micronesia',
-        MN: 'Minnesota',
-        MS: 'Mississippi',
-        MO: 'Missouri',
-        MT: 'Montana',
-        NE: 'Nebraska',
-        NV: 'Nevada',
-        NH: 'New Hampshire',
-        NJ: 'New Jersey',
-        NM: 'New Mexico',
-        NY: 'New York',
-        NC: 'North Carolina',
-        ND: 'North Dakota',
-        MP: 'Northern Mariana Islands',
-        'N. MARIANA ISLANDS': 'Northern Mariana Islands',
-        OH: 'Ohio',
-        OK: 'Oklahoma',
-        OR: 'Oregon',
-        PW: 'Palau',
-        PALAU: 'Palau',
-        PA: 'Pennsylvania',
-        PR: 'Puerto Rico',
-        RI: 'Rhode Island',
-        SC: 'South Carolina',
-        SD: 'South Dakota',
-        TN: 'Tennessee',
-        TX: 'Texas',
-        UT: 'Utah',
-        VT: 'Vermont',
-        VI: 'U.S. Virgin Islands',
-        'VIRGIN ISLANDS': 'U.S. Virgin Islands',
-        'U.S. MINOR ISLANDS': 'U.S. Minor Outlying Islands',
-        UM: 'U.S. Minor Outlying Islands',
-        VA: 'Virginia',
-        WA: 'Washington',
-        WV: 'West Virginia',
-        WI: 'Wisconsin',
-        WY: 'Wyoming',
-        MOROCCO: 'Morocco'
     };
     const SELECT_FIELDS = {};
     // field metadata shared by multi select menus and filter matching
@@ -166,95 +68,6 @@
             displayName: displayValue
         }
     };
-    const COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
-
-    function toTitleCase(value) {
-        return String(value || '')
-            .toLowerCase()
-            .replace(/(^|[\s./&;,-])([a-z])/g, (_, boundary, letter) => boundary + letter.toUpperCase());
-    }
-
-    // normalizes state/territory codes and all-caps source values for display
-    function stateDisplayName(value) {
-        const normalized = String(value || '').trim();
-        if (!normalized) return '';
-        const mapped = STATE_NAMES[normalized] || STATE_NAMES[normalized.toUpperCase()];
-        if (mapped) return mapped;
-        const decoded = displayValue(normalized);
-        return /^[A-Z0-9][A-Z0-9\s./'-]*$/.test(decoded) ? toTitleCase(decoded) : decoded;
-    }
-
-    function escapeRegExp(value) {
-        return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    // case-insensitive substring match across name, reference, city, state abbr, and full state name
-    function featureMatchesResultsQuery(feature, query) {
-        const normalized = String(query || '').trim().toLowerCase();
-        if (!normalized) return true;
-        const props = feature.properties || {};
-        if (RESULTS_SEARCH_FIELDS.some(field => String(props[field] || '').toLowerCase().includes(normalized))) {
-            return true;
-        }
-        return stateDisplayName(props.State).toLowerCase().includes(normalized);
-    }
-
-    // wraps every case-insensitive match of query in a highlight mark
-    function appendHighlightedText(container, text, query) {
-        const value = String(text || '');
-        const normalized = String(query || '').trim();
-        if (!normalized || !value) {
-            container.appendChild(document.createTextNode(value));
-            return;
-        }
-
-        const pattern = new RegExp(escapeRegExp(normalized), 'gi');
-        let lastIndex = 0;
-        let match;
-        while ((match = pattern.exec(value)) !== null) {
-            if (match.index > lastIndex) {
-                container.appendChild(document.createTextNode(value.slice(lastIndex, match.index)));
-            }
-            const mark = document.createElement('mark');
-            mark.className = 'result-search-highlight';
-            mark.textContent = match[0];
-            container.appendChild(mark);
-            lastIndex = match.index + match[0].length;
-            if (match[0].length === 0) pattern.lastIndex += 1;
-        }
-        if (lastIndex < value.length) {
-            container.appendChild(document.createTextNode(value.slice(lastIndex)));
-        }
-    }
-
-    // builds "City, ST" with live search highlights; full state-name matches highlight the abbreviation
-    function appendHighlightedLocation(container, props, query) {
-        const city = String(props.City || '').trim();
-        const state = String(props.State || '').trim();
-        if (!city && !state) {
-            container.appendChild(document.createTextNode('Location unavailable'));
-            return;
-        }
-
-        const normalized = String(query || '').trim().toLowerCase();
-        if (city) appendHighlightedText(container, city, query);
-        if (city && state) container.appendChild(document.createTextNode(', '));
-        if (!state) return;
-
-        const abbrMatches = normalized && state.toLowerCase().includes(normalized);
-        const nameMatches = normalized && stateDisplayName(state).toLowerCase().includes(normalized);
-        if (abbrMatches) {
-            appendHighlightedText(container, state, query);
-        } else if (nameMatches) {
-            const mark = document.createElement('mark');
-            mark.className = 'result-search-highlight';
-            mark.textContent = state;
-            container.appendChild(mark);
-        } else {
-            container.appendChild(document.createTextNode(state));
-        }
-    }
-
     // normalizes all caps agency names without changing mixed case names
     function agencyDisplayName(value) {
         const decoded = displayValue(value);
@@ -304,12 +117,6 @@
         return normalized === 'Any' ? '' : normalized;
     }
 
-    function displayValue(value) {
-        const decoder = document.createElement('textarea');
-        decoder.innerHTML = value;
-        return decoder.value;
-    }
-
     function selectedCheckboxValues(selector, defaults) {
         const boxes = Array.from(document.querySelectorAll(selector));
         return boxes.length ? boxes.filter(box => box.checked).map(box => box.value) : defaults.slice();
@@ -343,6 +150,7 @@
         }
         if (state.city && !String(props.City || '').toLowerCase().includes(state.city.toLowerCase())) return false;
         if (state.county && !String(props.County || '').toLowerCase().includes(state.county.toLowerCase())) return false;
+        // combined mode matches either source while separated fields are independent requirements
         if (state.significanceSeparated) {
             if (
                 state.significanceMetadata &&
@@ -371,118 +179,6 @@
             if (!Number.isFinite(year) || year < minimum || year > maximum) return false;
         }
         return true;
-    }
-
-    function comparePresentText(a, b) {
-        const left = String(a || '').trim();
-        const right = String(b || '').trim();
-        if (!left || !right) return left ? -1 : right ? 1 : 0;
-        return COLLATOR.compare(left, right);
-    }
-
-    // compares arbitrarily long digit-only IDs without losing precision or treating leading zeroes as significant
-    function compareReferenceIds(a, b) {
-        const left = String(a || '').trim();
-        const right = String(b || '').trim();
-        if (!left || !right) return left ? -1 : right ? 1 : 0;
-        const leftIsNumeric = /^\d+$/.test(left);
-        const rightIsNumeric = /^\d+$/.test(right);
-        if (leftIsNumeric && rightIsNumeric) {
-            const normalizedLeft = left.replace(/^0+(?=\d)/, '');
-            const normalizedRight = right.replace(/^0+(?=\d)/, '');
-            return normalizedLeft.length - normalizedRight.length
-                || normalizedLeft.localeCompare(normalizedRight)
-                || left.length - right.length;
-        }
-        if (leftIsNumeric !== rightIsNumeric) return leftIsNumeric ? -1 : 1;
-        return COLLATOR.compare(left, right);
-    }
-
-    function featureTieBreak(a, b) {
-        return comparePresentText(a.properties?.Historic_Name, b.properties?.Historic_Name)
-            || compareReferenceIds(a.properties?.ReferenceID, b.properties?.ReferenceID)
-            || COLLATOR.compare(String(a.id ?? ''), String(b.id ?? ''));
-    }
-
-    function textMatchScore(feature, query, fields) {
-        const needle = String(query || '').trim().toLowerCase();
-        if (!needle) return { strength: 0, priority: 0 };
-        const props = feature.properties || {};
-        let bestStrength = 0;
-        let bestPriority = 0;
-        fields.forEach((field, index) => {
-            const values = [String(props[field] || '').trim().toLowerCase()];
-            if (field === 'State') values.push(stateDisplayName(props.State).toLowerCase());
-            values.forEach(value => {
-                if (!value.includes(needle)) return;
-                const strength = value === needle ? 3 : value.startsWith(needle) ? 2 : 1;
-                // Earlier fields have higher priority, with primary name always first.
-                const priority = fields.length - index;
-                if (strength > bestStrength || (strength === bestStrength && priority > bestPriority)) {
-                    bestStrength = strength;
-                    bestPriority = priority;
-                }
-            });
-        });
-        return { strength: bestStrength, priority: bestPriority };
-    }
-
-    function selectedGroupMatchCount(props, selected, fields) {
-        if (!Array.isArray(selected) || selected.length === fields.length + 1) return 0;
-        const hasCategory = fields.some(field => props[field] === '1');
-        return selected.reduce((count, field) => (
-            count + (field === 'None' ? Number(!hasCategory) : Number(props[field] === '1'))
-        ), 0);
-    }
-
-    function bestMatchScore(feature, appliedState, resultsQuery) {
-        const appliedText = textMatchScore(feature, appliedState?.search, BEST_MATCH_SEARCH_FIELDS);
-        const resultsText = textMatchScore(feature, resultsQuery, RESULTS_SEARCH_FIELDS);
-        const cityText = textMatchScore(feature, appliedState?.city, ['City']);
-        const countyText = textMatchScore(feature, appliedState?.county, ['County']);
-        const props = feature.properties || {};
-        return {
-            strength: appliedText.strength + resultsText.strength + cityText.strength + countyText.strength,
-            priority: appliedText.priority + resultsText.priority + cityText.priority + countyText.priority,
-            categories: selectedGroupMatchCount(props, appliedState?.modes, MODE_FIELDS)
-                + selectedGroupMatchCount(props, appliedState?.supremacy, SUPREMACY_FIELDS)
-        };
-    }
-
-    // sorts a copy so rendering can change order without mutating the controller's applied result set
-    function sortFeatures(features, sortValue = 'best-match', appliedState = null, resultsQuery = '') {
-        return features.slice().sort((a, b) => {
-            const left = a.properties || {};
-            const right = b.properties || {};
-            if (sortValue === 'name') {
-                return comparePresentText(left.Historic_Name, right.Historic_Name)
-                    || comparePresentText(stateDisplayName(left.State), stateDisplayName(right.State))
-                    || comparePresentText(left.City, right.City)
-                    || compareReferenceIds(left.ReferenceID, right.ReferenceID)
-                    || COLLATOR.compare(String(a.id ?? ''), String(b.id ?? ''));
-            }
-            if (sortValue === 'state') {
-                return comparePresentText(stateDisplayName(left.State), stateDisplayName(right.State))
-                    || comparePresentText(left.City, right.City)
-                    || featureTieBreak(a, b);
-            }
-            if (sortValue === 'city') {
-                return comparePresentText(left.City, right.City)
-                    || comparePresentText(stateDisplayName(left.State), stateDisplayName(right.State))
-                    || featureTieBreak(a, b);
-            }
-            if (sortValue === 'id') {
-                return compareReferenceIds(left.ReferenceID, right.ReferenceID)
-                    || featureTieBreak(a, b);
-            }
-
-            const leftScore = bestMatchScore(a, appliedState, resultsQuery);
-            const rightScore = bestMatchScore(b, appliedState, resultsQuery);
-            return rightScore.strength - leftScore.strength
-                || rightScore.priority - leftScore.priority
-                || rightScore.categories - leftScore.categories
-                || featureTieBreak(a, b);
-        });
     }
 
     // creates the filter controls and their shared results controller
@@ -577,6 +273,7 @@
             applyButton.disabled = isAutoUpdateEnabled();
         }
 
+        // swaps significance inputs and reuses the tab height transition for the added grid row
         function syncSignificanceMode({ animate = true } = {}) {
             const separate = Boolean(significanceSeparated?.checked);
             const documentationPanel = byId('documentation-filter-panel');
@@ -584,6 +281,7 @@
             const fromHeight = shouldAnimate ? tabContent.getBoundingClientRect().height : 0;
 
             if (shouldAnimate) {
+                // release any prior inline height before measuring the new natural layout
                 if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
                 tabHeightFrame = 0;
                 tabContent.classList.remove('is-animating-height');
@@ -980,6 +678,7 @@
                 if (range[0] !== field.min || range[1] !== field.max) counts.time++;
             });
             ['primaryForm', 'requestType'].forEach(key => { if (hasSelectFilter(state[key])) counts.documentation++; });
+            // the mode checkbox changes presentation only, so only populated searches count
             if (state.significanceSeparated) {
                 if (state.significanceMetadata) counts.documentation++;
                 if (state.significanceNomination) counts.documentation++;
@@ -1120,6 +819,7 @@
             if (returnFocus) resultsSortToggle?.focus();
         }
 
+        // syncs visual and accessible menu state with optional keyboard entry focus
         function setExportMenuOpen(open, { focus = false, focusLast = false } = {}) {
             if (!resultsExportToggle || !resultsExportMenu) return;
             resultsExportToggle.setAttribute('aria-expanded', String(open));
@@ -1132,6 +832,7 @@
             target.focus();
         }
 
+        // prefers the raw spreadsheet schema and falls back for injected or legacy feature data
         function exportSourceColumns(exportFeatures) {
             const sourceFields = map._landmarkSourceData?._sourceFields;
             if (Array.isArray(sourceFields) && sourceFields.length > 0) return sourceFields.slice();
@@ -1143,6 +844,7 @@
             return Array.from(columns);
         }
 
+        // aligns raw cells to source columns and reconstructs legacy rows when metadata is absent
         function exportSourceRow(feature, columns) {
             if (Array.isArray(feature?._sourceRow)) {
                 return columns.map((_, index) => feature._sourceRow[index] ?? '');
@@ -1157,19 +859,21 @@
             return columns.map(column => fallback[column] ?? '');
         }
 
+        // downloads the visible result set with original spreadsheet columns and source ordering
         function exportResultsToCsv() {
             if (typeof window.Papa?.unparse !== 'function') {
                 console.error('CSV export requires Papa Parse.');
                 return;
             }
 
-            // include the results-panel search, then restore source spreadsheet order
+            // getVisibleResults includes the results search before source IDs restore sheet order
             const exportFeatures = getVisibleResults().sort((a, b) => Number(a.id) - Number(b.id));
             const fields = exportSourceColumns(exportFeatures);
             const csv = window.Papa.unparse({
                 fields,
                 data: exportFeatures.map(feature => exportSourceRow(feature, fields))
             });
+            // the byte order mark keeps non-ASCII spreadsheet text readable in Excel
             const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -1178,6 +882,7 @@
             document.body.appendChild(link);
             link.click();
             link.remove();
+            // delay cleanup until the browser has consumed the synthetic download click
             setTimeout(() => URL.revokeObjectURL(url), 0);
         }
 
@@ -1186,6 +891,7 @@
             csv: exportResultsToCsv
         };
 
+        // dispatches extensible formats and returns focus to the menu trigger
         function runExport(format) {
             const handler = exportHandlers[format];
             if (typeof handler !== 'function') return;
@@ -1584,6 +1290,7 @@
             event.preventDefault();
             resultsSortOptions[targetIndex]?.focus();
         });
+        // keep hover, touch, and keyboard behavior on one accessible menu state
         listen(resultsExportRoot, 'pointerenter', () => setExportMenuOpen(true));
         listen(resultsExportRoot, 'pointerleave', () => setExportMenuOpen(false));
         listen(resultsExportRoot, 'focusout', event => {

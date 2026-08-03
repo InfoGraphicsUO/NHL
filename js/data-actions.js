@@ -4,8 +4,8 @@ const LANDMARK_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQC
 // later duplicates shift north by their index times this many latitude degrees
 const DUPLICATE_COORDINATE_LAT_OFFSET = 0.00009;
 
+// converts object rows to map features while keeping index-aligned raw rows for export
 function csvRowsToGeoJSON(rows, sourceRows = []) {
-    // convert valid sheets rows into point features
     const features = [];
 
     rows.forEach((row, rowIndex) => {
@@ -37,7 +37,7 @@ function csvRowsToGeoJSON(rows, sourceRows = []) {
             properties
         });
 
-        // retain the exact spreadsheet row for downloads without sending it to Mapbox
+        // filter-panel.js exports this raw row while enumerable keys stay valid GeoJSON for Mapbox
         Object.defineProperty(features[features.length - 1], '_sourceRow', {
             value: Array.isArray(sourceRows[rowIndex]) ? sourceRows[rowIndex].slice() : { ...row },
             enumerable: false
@@ -122,6 +122,7 @@ async function loadLandmarkSourceData() {
         header: true,
         skipEmptyLines: true
     });
+    // Papa renames duplicate object headers, so array rows retain the spreadsheet schema for export
     const rawParsed = Papa.parse(csvText, {
         skipEmptyLines: true
     });
@@ -130,7 +131,7 @@ async function loadLandmarkSourceData() {
 
     const geojson = csvRowsToGeoJSON(parsed.data, sourceRows);
 
-    // preserve the spreadsheet's original column order outside serialized GeoJSON
+    // filter-panel.js reads this non-enumerable schema without sending it to Mapbox
     Object.defineProperty(geojson, '_sourceFields', {
         value: sourceFields.slice(),
         enumerable: false
