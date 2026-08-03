@@ -340,6 +340,40 @@
     margin: 0;
 }
 
+.form-grid > label.inline-checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    justify-self: start;
+    cursor: pointer;
+    line-height: 1.25;
+}
+
+.inline-checkbox-row .styled-checkbox {
+    margin-top: 0.02rem;
+}
+
+[data-significance-mode]:not([hidden]) {
+    animation: significance-control-enter 180ms ease both;
+}
+
+@keyframes significance-control-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-0.2rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-significance-mode]:not([hidden]) {
+        animation: none;
+    }
+}
+
 #filter-panel select,
 #filter-panel .form-grid input[type="search"] {
     width: 100%;

@@ -12,7 +12,7 @@
         <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 
         <script src="js/slider-panel.js"></script>
-        <script src="js/filter-panel.js?v=20260803-export-2"></script>
+        <script src="js/filter-panel.js?v=20260803-significance-2"></script>
         <script src="js/ui.js"></script>
         <script src="js/hover-info-box.js"></script>
         <script src="js/data-actions.js?v=20260803-export"></script>
@@ -25,7 +25,7 @@
 
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="css/map.css">
-        <link rel="stylesheet" href="css/filter-panel.css">
+        <link rel="stylesheet" href="css/filter-panel.css?v=20260803-significance-2">
         <link rel="stylesheet" href="css/hover-info-box.css">
         <link rel="stylesheet" href="css/side-panel.css?v=20260803-export-2">
     </head>
@@ -190,6 +190,21 @@
                                     </button>
                                     <div class="multi-select-menu" id="request-type-filter-menu" role="listbox" aria-multiselectable="true" aria-labelledby="request-type-filter-toggle" hidden></div>
                                 </div>
+
+                                <label for="significance-filter" data-significance-mode="combined">Area of significance</label>
+                                <input id="significance-filter" data-significance-mode="combined" type="search" placeholder="Search either source..." autocomplete="off">
+
+                                <label for="significance-metadata-filter" data-significance-mode="separate" hidden>Metadata area</label>
+                                <input id="significance-metadata-filter" data-significance-mode="separate" type="search" placeholder="Search metadata..." autocomplete="off" hidden>
+
+                                <label for="significance-nomination-filter" data-significance-mode="separate" hidden>Nomination form area</label>
+                                <input id="significance-nomination-filter" data-significance-mode="separate" type="search" placeholder="Search nomination forms..." autocomplete="off" hidden>
+
+                                <span>Area sources</span>
+                                <label class="inline-checkbox-row" for="separate-significance-sources">
+                                    <input type="checkbox" class="styled-checkbox" id="separate-significance-sources">
+                                    <span>Separate metadata and nomination forms</span>
+                                </label>
 
                                 <span>Has Web PDF</span>
                                 <label class="switch-row switch-row-inline labeled-switch" for="web-pdf-filter">

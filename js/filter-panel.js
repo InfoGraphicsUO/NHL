@@ -38,6 +38,10 @@
         'County',
         'State'
     ];
+    const SIGNIFICANCE_FIELDS = {
+        metadata: 'Areas_of_Significance_Metadata',
+        nomination: 'Areas_of_Signifance_Nomination_Forms'
+    };
     // source values that need a public facing state / territory name
     // aliases (full names and codes) share one label so State/Territory sort groups correctly
     const STATE_NAMES = {
@@ -339,6 +343,22 @@
         }
         if (state.city && !String(props.City || '').toLowerCase().includes(state.city.toLowerCase())) return false;
         if (state.county && !String(props.County || '').toLowerCase().includes(state.county.toLowerCase())) return false;
+        if (state.significanceSeparated) {
+            if (
+                state.significanceMetadata &&
+                !String(props[SIGNIFICANCE_FIELDS.metadata] || '').toLowerCase().includes(state.significanceMetadata.toLowerCase())
+            ) return false;
+            if (
+                state.significanceNomination &&
+                !String(props[SIGNIFICANCE_FIELDS.nomination] || '').toLowerCase().includes(state.significanceNomination.toLowerCase())
+            ) return false;
+        } else if (state.significance) {
+            const significanceQuery = state.significance.toLowerCase();
+            const matchesEitherSource = Object.values(SIGNIFICANCE_FIELDS).some(field => (
+                String(props[field] || '').toLowerCase().includes(significanceQuery)
+            ));
+            if (!matchesEitherSource) return false;
+        }
         if (state.hideRestricted && props.Restricted === '1') return false;
         if (state.hasWebPdf && !validWebPdf(props['Web PDF'])) return false;
 
@@ -479,6 +499,10 @@
         const county = fieldControl('county', ['place-county', 'county-filter', 'filter-county']);
         const restricted = fieldControl('restricted', ['restricted-sites-filter', 'restricted-sites', 'restricted-filter', 'filter-restricted']);
         const webPdf = fieldControl('hasWebPdf', ['has-web-pdf', 'web-pdf-filter', 'filter-web-pdf']);
+        const significance = byId('significance-filter');
+        const significanceMetadata = byId('significance-metadata-filter');
+        const significanceNomination = byId('significance-nomination-filter');
+        const significanceSeparated = byId('separate-significance-sources');
         const applyButton = byId('apply-filters');
         const autoUpdateResults = byId('auto-update-results');
         const clearButton = byId('clear-filters');
@@ -551,6 +575,32 @@
         function syncApplyButtonState() {
             if (!applyButton) return;
             applyButton.disabled = isAutoUpdateEnabled();
+        }
+
+        function syncSignificanceMode({ animate = true } = {}) {
+            const separate = Boolean(significanceSeparated?.checked);
+            const documentationPanel = byId('documentation-filter-panel');
+            const shouldAnimate = animate && tabContent && documentationPanel && !documentationPanel.hidden;
+            const fromHeight = shouldAnimate ? tabContent.getBoundingClientRect().height : 0;
+
+            if (shouldAnimate) {
+                if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
+                tabHeightFrame = 0;
+                tabContent.classList.remove('is-animating-height');
+                tabContent.style.height = '';
+            }
+
+            document.querySelectorAll('[data-significance-mode="combined"]').forEach(element => {
+                element.hidden = separate;
+            });
+            document.querySelectorAll('[data-significance-mode="separate"]').forEach(element => {
+                element.hidden = !separate;
+            });
+
+            if (shouldAnimate) {
+                const toHeight = tabContent.getBoundingClientRect().height;
+                animateTabContentHeight(fromHeight, toHeight);
+            }
         }
 
         // refreshes draft only UI before optionally applying the new filters
@@ -889,6 +939,10 @@
                 supremacy: selectedCheckboxValues('.supremacy-filter', [...SUPREMACY_FIELDS, 'None']),
                 city: city?.value.trim() || '',
                 county: county?.value.trim() || '',
+                significance: significance?.value.trim() || '',
+                significanceMetadata: significanceMetadata?.value.trim() || '',
+                significanceNomination: significanceNomination?.value.trim() || '',
+                significanceSeparated: Boolean(significanceSeparated?.checked),
                 hideRestricted: getRestrictedHidden(),
                 hasWebPdf: Boolean(webPdf?.checked),
                 years: sliders.getRanges()
@@ -926,6 +980,12 @@
                 if (range[0] !== field.min || range[1] !== field.max) counts.time++;
             });
             ['primaryForm', 'requestType'].forEach(key => { if (hasSelectFilter(state[key])) counts.documentation++; });
+            if (state.significanceSeparated) {
+                if (state.significanceMetadata) counts.documentation++;
+                if (state.significanceNomination) counts.documentation++;
+            } else if (state.significance) {
+                counts.documentation++;
+            }
             if (state.hasWebPdf) counts.documentation++;
             return counts;
         }
@@ -1270,6 +1330,11 @@
 
             if (city) city.value = '';
             if (county) county.value = '';
+            if (significance) significance.value = '';
+            if (significanceMetadata) significanceMetadata.value = '';
+            if (significanceNomination) significanceNomination.value = '';
+            if (significanceSeparated) significanceSeparated.checked = false;
+            syncSignificanceMode();
             if (webPdf?.type === 'checkbox') webPdf.checked = false;
             document.querySelectorAll('[name="restricted-sites"], [name="restricted-filter"]').forEach(control => {
                 control.checked = String(control.value).toLowerCase() === 'show';
@@ -1462,6 +1527,7 @@
         populateSelects();
         activateTab(tabButtons.find(tab => tab.getAttribute('aria-selected') === 'true') || tabButtons[0], { animate: false });
         updateDraftIndicators();
+        syncSignificanceMode({ animate: false });
         listen(tabContent, 'transitionend', event => {
             if (event.target !== tabContent || event.propertyName !== 'height') return;
             clearTabContentHeight();
@@ -1582,6 +1648,7 @@
             syncApplyButtonState();
             if (isAutoUpdateEnabled()) applyFilters();
         });
+        listen(significanceSeparated, 'change', syncSignificanceMode);
         document.querySelectorAll('#filter-panel input, #filter-panel select').forEach(control => {
             if (control === autoUpdateResults || control === modeSymbology) return;
             if (Object.values(MULTI_SELECT_FIELDS).some(config => control.classList.contains(config.checkboxClass))) return;
