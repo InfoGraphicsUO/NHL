@@ -493,6 +493,10 @@
         const resultsSortToggle = byId('results-sort-toggle');
         const resultsSortMenu = byId('results-sort-menu');
         const resultsSortOptions = Array.from(resultsSortMenu?.querySelectorAll('[data-sort-value]') || []);
+        const resultsExportRoot = document.querySelector('.results-export');
+        const resultsExportToggle = byId('results-export-toggle');
+        const resultsExportMenu = byId('results-export-menu');
+        const resultsExportOptions = Array.from(resultsExportMenu?.querySelectorAll('[data-export-format]') || []);
         const compactToggle = byId('compact-results-toggle');
         const closeButton = byId('results-panel-close');
         const detailBack = byId('detail-back');
@@ -1056,6 +1060,80 @@
             if (returnFocus) resultsSortToggle?.focus();
         }
 
+        function setExportMenuOpen(open, { focus = false, focusLast = false } = {}) {
+            if (!resultsExportToggle || !resultsExportMenu) return;
+            resultsExportToggle.setAttribute('aria-expanded', String(open));
+            resultsExportMenu.setAttribute('aria-hidden', String(!open));
+            resultsExportRoot?.classList.toggle('is-open', open);
+            if (!open || !focus || resultsExportOptions.length === 0) return;
+            const target = focusLast
+                ? resultsExportOptions[resultsExportOptions.length - 1]
+                : resultsExportOptions[0];
+            target.focus();
+        }
+
+        function exportSourceColumns(exportFeatures) {
+            const sourceFields = map._landmarkSourceData?._sourceFields;
+            if (Array.isArray(sourceFields) && sourceFields.length > 0) return sourceFields.slice();
+
+            const columns = new Set(['LAT', 'LON']);
+            exportFeatures.forEach(feature => {
+                Object.keys(feature.properties || {}).forEach(column => columns.add(column));
+            });
+            return Array.from(columns);
+        }
+
+        function exportSourceRow(feature, columns) {
+            if (Array.isArray(feature?._sourceRow)) {
+                return columns.map((_, index) => feature._sourceRow[index] ?? '');
+            }
+            if (feature?._sourceRow) return columns.map(column => feature._sourceRow[column] ?? '');
+            const coordinates = feature?.geometry?.coordinates || [];
+            const fallback = {
+                LAT: coordinates[1] ?? '',
+                LON: coordinates[0] ?? '',
+                ...(feature?.properties || {})
+            };
+            return columns.map(column => fallback[column] ?? '');
+        }
+
+        function exportResultsToCsv() {
+            if (typeof window.Papa?.unparse !== 'function') {
+                console.error('CSV export requires Papa Parse.');
+                return;
+            }
+
+            // include the results-panel search, then restore source spreadsheet order
+            const exportFeatures = getVisibleResults().sort((a, b) => Number(a.id) - Number(b.id));
+            const fields = exportSourceColumns(exportFeatures);
+            const csv = window.Papa.unparse({
+                fields,
+                data: exportFeatures.map(feature => exportSourceRow(feature, fields))
+            });
+            const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `monumental-denial-filtered-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+        }
+
+        // adding a format only requires a menu option and a handler here
+        const exportHandlers = {
+            csv: exportResultsToCsv
+        };
+
+        function runExport(format) {
+            const handler = exportHandlers[format];
+            if (typeof handler !== 'function') return;
+            setExportMenuOpen(false);
+            handler();
+            resultsExportToggle?.focus();
+        }
+
         let appliedState = null;
         let appliedResults = [];
 
@@ -1332,6 +1410,7 @@
             },
             hideResultsPanel() {
                 setSortMenuOpen(false);
+                setExportMenuOpen(false);
                 clearResultsIdleTimer();
                 clearResultsChromeInline();
                 if (shell) shell.classList.remove('is-open', 'showing-results', 'is-results-idle');
@@ -1339,6 +1418,7 @@
             },
             showDetail() {
                 setSortMenuOpen(false);
+                setExportMenuOpen(false);
                 clearResultsIdleTimer();
                 clearResultsChromeInline();
                 if (shell) shell.classList.add('is-open');
@@ -1367,6 +1447,7 @@
                 clearResultsChromeInline();
                 clearTabContentHeight();
                 setSortMenuOpen(false);
+                setExportMenuOpen(false);
                 closeAllMultiSelects();
                 clearAllMultiSelectTypeahead();
                 listeners.splice(0).forEach(remove => remove());
@@ -1396,6 +1477,7 @@
         });
         listen(resultsSortToggle, 'click', event => {
             event.preventDefault();
+            setExportMenuOpen(false);
             const willOpen = resultsSortToggle.getAttribute('aria-expanded') !== 'true';
             setSortMenuOpen(willOpen, { focus: willOpen });
         });
@@ -1435,6 +1517,55 @@
             }
             event.preventDefault();
             resultsSortOptions[targetIndex]?.focus();
+        });
+        listen(resultsExportRoot, 'pointerenter', () => setExportMenuOpen(true));
+        listen(resultsExportRoot, 'pointerleave', () => setExportMenuOpen(false));
+        listen(resultsExportRoot, 'focusout', event => {
+            if (!resultsExportRoot?.contains(event.relatedTarget)) setExportMenuOpen(false);
+        });
+        listen(resultsExportToggle, 'click', event => {
+            event.preventDefault();
+            setSortMenuOpen(false);
+            const willOpen = resultsExportToggle.getAttribute('aria-expanded') !== 'true';
+            setExportMenuOpen(willOpen);
+        });
+        listen(resultsExportToggle, 'keydown', event => {
+            if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+            event.preventDefault();
+            setSortMenuOpen(false);
+            setExportMenuOpen(true, { focus: true, focusLast: event.key === 'ArrowUp' });
+        });
+        listen(resultsExportMenu, 'click', event => {
+            const option = event.target.closest('[data-export-format]');
+            if (!option || !resultsExportMenu.contains(option)) return;
+            runExport(option.dataset.exportFormat);
+        });
+        listen(resultsExportMenu, 'keydown', event => {
+            const current = event.target.closest('[data-export-format]');
+            if (!current) return;
+            const currentIndex = resultsExportOptions.indexOf(current);
+            let targetIndex = currentIndex;
+            if (event.key === 'ArrowDown') targetIndex = (currentIndex + 1) % resultsExportOptions.length;
+            else if (event.key === 'ArrowUp') targetIndex = (currentIndex - 1 + resultsExportOptions.length) % resultsExportOptions.length;
+            else if (event.key === 'Home') targetIndex = 0;
+            else if (event.key === 'End') targetIndex = resultsExportOptions.length - 1;
+            else if (event.key === 'Escape') {
+                event.preventDefault();
+                setExportMenuOpen(false);
+                resultsExportToggle?.focus();
+                return;
+            } else if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                runExport(current.dataset.exportFormat);
+                return;
+            } else if (event.key === 'Tab') {
+                setExportMenuOpen(false);
+                return;
+            } else {
+                return;
+            }
+            event.preventDefault();
+            resultsExportOptions[targetIndex]?.focus();
         });
         listen(compactToggle, 'change', () => {
             resultsView?.classList.toggle('is-compact', compactToggle.checked);
@@ -1494,6 +1625,9 @@
                     setSortMenuOpen(false);
                 }
             }
+            if (resultsExportToggle?.getAttribute('aria-expanded') === 'true' && !resultsExportRoot?.contains(event.target)) {
+                setExportMenuOpen(false);
+            }
             Object.entries(MULTI_SELECT_FIELDS).forEach(([key, config]) => {
                 const toggle = byId(config.toggleId);
                 const root = byId(config.rootId);
@@ -1511,6 +1645,11 @@
                 if (resultsSortToggle?.getAttribute('aria-expanded') === 'true') {
                     setSortMenuOpen(false);
                     resultsSortToggle.focus();
+                    return;
+                }
+                if (resultsExportToggle?.getAttribute('aria-expanded') === 'true') {
+                    setExportMenuOpen(false);
+                    resultsExportToggle.focus();
                     return;
                 }
                 const openKey = Object.keys(MULTI_SELECT_FIELDS).find(key => (
@@ -1549,6 +1688,7 @@
             option.classList.toggle('is-selected', selected);
         });
         setSortMenuOpen(false);
+        setExportMenuOpen(false);
         syncApplyButtonState();
         applyFilters({ openResults: false, clearSelection: false });
         controller.hideResultsPanel();

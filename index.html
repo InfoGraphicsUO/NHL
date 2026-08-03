@@ -12,10 +12,10 @@
         <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 
         <script src="js/slider-panel.js"></script>
-        <script src="js/filter-panel.js"></script>
+        <script src="js/filter-panel.js?v=20260803-export-2"></script>
         <script src="js/ui.js"></script>
         <script src="js/hover-info-box.js"></script>
-        <script src="js/data-actions.js"></script>
+        <script src="js/data-actions.js?v=20260803-export"></script>
         <script src="js/map-layers.js"></script>
         <script src="js/map.js"></script>
 
@@ -27,7 +27,7 @@
         <link rel="stylesheet" href="css/map.css">
         <link rel="stylesheet" href="css/filter-panel.css">
         <link rel="stylesheet" href="css/hover-info-box.css">
-        <link rel="stylesheet" href="css/side-panel.css">
+        <link rel="stylesheet" href="css/side-panel.css?v=20260803-export-2">
     </head>
     <body>
         <main>
@@ -240,6 +240,15 @@
                                     <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="state">State/Territory</button>
                                     <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="city">City</button>
                                     <button class="results-sort-option" type="button" role="menuitemradio" aria-checked="false" data-sort-value="id">ID number</button>
+                                </div>
+                            </div>
+                            <div class="results-export">
+                                <button id="results-export-toggle" class="results-export-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="results-export-menu">
+                                    <span>Export</span>
+                                    <span class="results-sort-caret" aria-hidden="true"></span>
+                                </button>
+                                <div id="results-export-menu" class="results-export-menu" role="menu" aria-labelledby="results-export-toggle" aria-hidden="true">
+                                    <button class="results-export-option" type="button" role="menuitem" data-export-format="csv">Export to CSV</button>
                                 </div>
                             </div>
                         </div>

@@ -4,11 +4,11 @@ const LANDMARK_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQC
 // later duplicates shift north by their index times this many latitude degrees
 const DUPLICATE_COORDINATE_LAT_OFFSET = 0.00009;
 
-function csvRowsToGeoJSON(rows) {
+function csvRowsToGeoJSON(rows, sourceRows = []) {
     // convert valid sheets rows into point features
     const features = [];
 
-    rows.forEach(row => {
+    rows.forEach((row, rowIndex) => {
         const lat = Number(row.LAT);
         const lon = Number(row.LON);
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
@@ -35,6 +35,12 @@ function csvRowsToGeoJSON(rows) {
                 coordinates: [lon, lat]
             },
             properties
+        });
+
+        // retain the exact spreadsheet row for downloads without sending it to Mapbox
+        Object.defineProperty(features[features.length - 1], '_sourceRow', {
+            value: Array.isArray(sourceRows[rowIndex]) ? sourceRows[rowIndex].slice() : { ...row },
+            enumerable: false
         });
     });
 
@@ -116,8 +122,19 @@ async function loadLandmarkSourceData() {
         header: true,
         skipEmptyLines: true
     });
+    const rawParsed = Papa.parse(csvText, {
+        skipEmptyLines: true
+    });
+    const sourceFields = Array.isArray(rawParsed.data[0]) ? rawParsed.data[0] : [];
+    const sourceRows = rawParsed.data.slice(1);
 
-    const geojson = csvRowsToGeoJSON(parsed.data);
+    const geojson = csvRowsToGeoJSON(parsed.data, sourceRows);
+
+    // preserve the spreadsheet's original column order outside serialized GeoJSON
+    Object.defineProperty(geojson, '_sourceFields', {
+        value: sourceFields.slice(),
+        enumerable: false
+    });
 
     // ids and offsets must be assigned before mapbox receives the source
     offsetDuplicateCoordinateFeatures(geojson);
