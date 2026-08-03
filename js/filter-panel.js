@@ -918,11 +918,16 @@
             return state;
         }
 
+        // each unchecked category option is an active restriction
+        function countCategoryRestrictions(selected, total) {
+            return total - selected.length;
+        }
+
         // counts active filters by tab for the visible badges
         function countActiveByTab(state) {
             const counts = {
-                modes: state.modes.length !== MODE_FIELDS.length + 1 ? 1 : 0,
-                supremacy: state.supremacy.length !== SUPREMACY_FIELDS.length + 1 ? 1 : 0,
+                modes: countCategoryRestrictions(state.modes, MODE_FIELDS.length + 1),
+                supremacy: countCategoryRestrictions(state.supremacy, SUPREMACY_FIELDS.length + 1),
                 place: 0,
                 time: 0,
                 documentation: 0
