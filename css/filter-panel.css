@@ -229,6 +229,31 @@
     outline-offset: 2px;
 }
 
+.mode-filter[value="Acknowledged"] {
+    --checkbox-color: var(--mode-acknowledged);
+    --checkbox-border-color: var(--mode-acknowledged);
+}
+
+.mode-filter[value="Multiculturalism"] {
+    --checkbox-color: var(--mode-multiculturalism);
+    --checkbox-border-color: var(--mode-multiculturalism);
+}
+
+.mode-filter[value="Valorization"] {
+    --checkbox-color: var(--mode-valorization);
+    --checkbox-border-color: var(--mode-valorization);
+}
+
+.mode-filter[value="Erasure"] {
+    --checkbox-color: var(--mode-erasure);
+    --checkbox-border-color: var(--mode-erasure);
+}
+
+.mode-filter[value="None"] {
+    --checkbox-color: var(--mode-none);
+    --checkbox-border-color: var(--mode-none);
+}
+
 .mode-filter[value="Erasure"],
 .mode-filter[value="None"] {
     --checkbox-check-color: #222;
@@ -539,7 +564,7 @@
     border-color: #b0b0b0;
     background: #d0d0d0;
     color: #6a6a6a;
-    cursor: not-allowed;
+    cursor: default;
 }
 
 .apply-button:disabled:hover {

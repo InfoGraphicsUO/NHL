@@ -268,9 +268,14 @@
             return Boolean(autoUpdateResults?.checked);
         }
 
+        function hasPendingFilterChanges() {
+            if (!appliedState) return true;
+            return JSON.stringify(readDraft()) !== JSON.stringify(appliedState);
+        }
+
         function syncApplyButtonState() {
             if (!applyButton) return;
-            applyButton.disabled = isAutoUpdateEnabled();
+            applyButton.disabled = isAutoUpdateEnabled() || !hasPendingFilterChanges();
         }
 
         // swaps significance inputs and reuses the tab height transition for the added grid row
@@ -306,6 +311,7 @@
             updateDraftIndicators();
             Object.keys(MULTI_SELECT_FIELDS).forEach(syncMultiSelectLabel);
             if (isAutoUpdateEnabled()) applyFilters();
+            syncApplyButtonState();
         }
 
         const sliders = typeof setupFilterYearSliders === 'function'
@@ -1015,6 +1021,7 @@
             if (typeof options.onApply === 'function') {
                 options.onApply({ state: cloneState(appliedState), results: appliedResults.slice() });
             }
+            syncApplyButtonState();
             return appliedResults.slice();
         }
 
@@ -1450,7 +1457,7 @@
         listen(filterPanel, 'keydown', event => {
             if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
             if (event.target.closest('button, select, [role="tab"], .multi-select, .multi-select-menu')) return;
-            if (isAutoUpdateEnabled()) return;
+            if (isAutoUpdateEnabled() || !hasPendingFilterChanges()) return;
             event.preventDefault();
             applyFilters();
         });
@@ -1463,8 +1470,8 @@
         });
         setSortMenuOpen(false);
         setExportMenuOpen(false);
-        syncApplyButtonState();
         applyFilters({ openResults: false, clearSelection: false });
+        syncApplyButtonState();
         controller.hideResultsPanel();
         return controller;
     }
