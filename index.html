@@ -37,16 +37,14 @@
     <body>
         <main>
             <aside id="filter-panel" aria-labelledby="filter-panel-title">
+                <header class="filter-panel-header">
+                    <span class="active-filter-label">Filters <span id="active-filter-count" class="count-badge count-badge--zero" aria-live="polite">0</span></span>
+                </header>
                 <div class="filter-panel-body">
-                    <h1 id="filter-panel-title">Filters</h1>
 
                     <label class="visually-hidden" for="monument-search">Search monuments</label>
-                    <input type="search" id="monument-search" class="filter-search" placeholder="Search by name or keyword..." autocomplete="off">
+                    <input type="search" id="monument-search" class="filter-search" placeholder="Filter by name or keyword..." autocomplete="off">
 
-                    <div class="filter-summary">
-                        <button id="clear-filters" class="clear-filters-button" type="button">Clear all filters</button>
-                        <span class="active-filter-label">Total active filters <span id="active-filter-count" class="count-badge count-badge--zero" aria-live="polite">0</span></span>
-                    </div>
 
                     <div class="filter-tabs" role="tablist" aria-label="Filter categories">
                         <button id="filter-tab-modes" class="filter-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="modes-filter-panel"><span class="filter-tab-label">Modes of Representation</span> <span id="filter-tab-modes-count" class="count-badge count-badge--zero" aria-hidden="true">0</span></button>
@@ -67,7 +65,7 @@
                                 <label><input type="checkbox" class="styled-checkbox mode-filter" value="None" checked> <span>None</span></label>
                             </fieldset>
                             <label class="switch-row" for="modeSymbologySwitch">
-                                <input type="checkbox" role="switch" id="modeSymbologySwitch">
+                                <input type="checkbox" role="switch" id="modeSymbologySwitch" checked>
                                 <span class="switch-control" aria-hidden="true"></span>
                                 <span>Color by category</span>
                             </label>
@@ -228,9 +226,10 @@
                 <footer class="filter-panel-footer">
                     <button id="apply-filters" class="apply-button" type="button">Apply filters <i class="apply-enter-key fa-duotone fa-light fa-arrow-turn-down-left" aria-hidden="true"></i></button>
                     <!-- <span id="filter-result-count" aria-live="polite">0 results</span> -->
+                    <button id="clear-filters" class="clear-filters-button" type="button"><i class="fa-solid fa-filter-slash" style="opacity: 0.6;"></i> Clear</button>
                     <label class="auto-update-row" for="auto-update-results">
                         <input type="checkbox" class="styled-checkbox" id="auto-update-results">
-                        <span>Auto-update results <button type="button" class="info-button hover-info-trigger" aria-label="More info about Auto-update results" data-hover-info="Automatically updates results when filters are modified (may cause lag)"><i class="fa-light fa-circle-info" aria-hidden="true"></i></button></span>
+                        <span>Auto-update <button type="button" class="info-button hover-info-trigger" aria-label="More info about Auto-update results" data-hover-info="Automatically updates results when filters are modified (may cause lag)"><i class="fa-light fa-circle-info" aria-hidden="true"></i></button></span>
                     </label>
                 </footer>
             </aside>

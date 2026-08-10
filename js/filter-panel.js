@@ -656,16 +656,16 @@
             return state;
         }
 
-        // each unchecked category option is an active restriction
-        function countCategoryRestrictions(selected, total) {
-            return total - selected.length;
+        // checked category options count as active filters; all checked means no filter
+        function countCategoryFilters(selected, total) {
+            return selected.length === total ? 0 : selected.length;
         }
 
         // counts active filters by tab for the visible badges
         function countActiveByTab(state) {
             const counts = {
-                modes: countCategoryRestrictions(state.modes, MODE_FIELDS.length + 1),
-                supremacy: countCategoryRestrictions(state.supremacy, SUPREMACY_FIELDS.length + 1),
+                modes: countCategoryFilters(state.modes, MODE_FIELDS.length + 1),
+                supremacy: countCategoryFilters(state.supremacy, SUPREMACY_FIELDS.length + 1),
                 place: 0,
                 time: 0,
                 documentation: 0

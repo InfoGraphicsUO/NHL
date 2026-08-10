@@ -394,6 +394,21 @@ function addMapLayers(map) {
             addMapIcon(map, id, url);
         });
 
+        // satellite basemap sits under markers; visibility is toggled by SatelliteControl
+        map.addSource('basemap-satellite', {
+            type: 'raster',
+            url: 'mapbox://mapbox.satellite',
+            tileSize: 256
+        });
+        map.addLayer({
+            id: 'basemap-satellite',
+            type: 'raster',
+            source: 'basemap-satellite',
+            layout: {
+                visibility: 'none'
+            }
+        });
+
         // background layers keep filtered-out points visible and selectable
         map.addLayer({
             id: 'backgroundlandmark',

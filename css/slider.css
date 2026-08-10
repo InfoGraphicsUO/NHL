@@ -61,6 +61,7 @@
     background: var(--slider-handle);
     box-shadow: none;
     cursor: grab;
+    border: transparent;
 }
 
 .year-slider .noUi-handle::before,
@@ -109,3 +110,4 @@
     top: auto;
     bottom: 1rem;
 }
+

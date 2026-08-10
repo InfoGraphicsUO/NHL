@@ -26,6 +26,30 @@
     line-height: 1;
 }
 
+.mapboxgl-ctrl-satellite button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: auto;
+    min-width: 1.8125rem;
+    height: 1.8125rem;
+    padding: 0 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+}
+
+.mapboxgl-ctrl-satellite button i {
+    font-size: 0.95rem;
+}
+
+.mapboxgl-ctrl-satellite button.is-active {
+    background: #e8e8e8;
+}
+
 .mapboxgl-ctrl-top-left {
     top: 0.7rem;
     left: calc(1.25rem + 28rem);
