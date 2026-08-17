@@ -47,6 +47,7 @@
     line-height: 1;
     place-items: center;
     padding: 0;
+    border-radius: 50%;
 }
 
 .panel-icon-button:hover {
@@ -60,7 +61,7 @@
 }
 
 .detail-back {
-    margin: -0.35rem 0 0.65rem -0.5rem;
+    margin: 0rem 0 0.65rem -0.5rem;
 }
 
 .side-panel-header {

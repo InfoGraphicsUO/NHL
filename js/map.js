@@ -80,7 +80,7 @@ class SatelliteControl {
         this._button.setAttribute('aria-pressed', this._enabled ? 'true' : 'false');
         this._button.classList.toggle('is-active', this._enabled);
         this._button.innerHTML = this._enabled
-            ? '<i class="fa-solid fa-map" aria-hidden="true"></i><span>Simple Map</span>'
+            ? '<i class="fa-solid fa-map" aria-hidden="true"></i><span>Default Map</span>'
             : '<i class="fa-regular fa-earth-americas" aria-hidden="true"></i><span>Satellite</span>';
     }
 
