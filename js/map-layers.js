@@ -582,6 +582,7 @@ function addMapLayers(map) {
         // start with every feature active before the filter panel initializes
         setActivePointFilters(map, ALL_POINTS_FILTER);
         togglemodeSymbology();
+        window._nhlViewSwitcher?.syncMapState();
     
     });
 

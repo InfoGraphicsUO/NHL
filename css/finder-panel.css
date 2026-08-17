@@ -1,0 +1,114 @@
+.finder-panel-header {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #d8d8d8;
+}
+
+.finder-panel-header h1,
+.featured-spotlights h2,
+.finder-panel-intro {
+    margin-top: 0;
+}
+
+.finder-panel-header h1 {
+    margin-bottom: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.finder-panel-body {
+    min-height: 0;
+    padding: 0.85rem 1rem 1rem;
+    overflow-y: auto;
+}
+
+.finder-panel-intro {
+    margin-bottom: 1rem;
+    color: #555;
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.featured-spotlights h2 {
+    margin-bottom: 0.55rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.featured-spotlight-list {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.featured-spotlight-item {
+    display: flex;
+}
+
+.featured-spotlight-card {
+    width: 100%;
+    min-height: 2.8rem;
+    border: 1px solid #aaa;
+    border-radius: var(--radius);
+    background: #f7f7f7;
+    color: #444;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    padding: 0.55rem;
+    text-align: left;
+}
+
+.random-spotlight-button {
+    display: inline-flex;
+    width: 100%;
+    min-height: 2.4rem;
+    margin-top: 0.6rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid #aaa;
+    border-radius: var(--radius);
+    background: #f3f3f3;
+    color: #555;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.6rem;
+}
+
+.finder-panel-fields {
+    margin-top: 1rem;
+}
+
+.finder-panel-fields label {
+    display: block;
+    margin: 0.65rem 0 0.28rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.finder-panel-fields input,
+.finder-panel-fields select {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #777;
+    border-radius: var(--radius);
+    background: #fff;
+    color: #333;
+    font: inherit;
+    font-size: 0.88rem;
+    padding: 0.58rem 0.65rem;
+}
+
+.featured-spotlight-card:disabled,
+.random-spotlight-button:disabled,
+.finder-panel-fields input:disabled,
+.finder-panel-fields select:disabled {
+    cursor: not-allowed;
+    opacity: 0.62;
+}

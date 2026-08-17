@@ -107,6 +107,14 @@ class SatelliteControl {
         tryApply();
     }
 
+    isEnabled() {
+        return this._enabled;
+    }
+
+    setEnabled(enabled) {
+        this._setEnabled(Boolean(enabled));
+    }
+
     onRemove() {
         this._container.parentNode.removeChild(this._container);
     }
@@ -130,7 +138,9 @@ function mapInits() {
     initDevZoomDisplay(map);
     addMapLayers(map);
 
-    map.addControl(new SatelliteControl(), 'top-left');
+    const satelliteControl = new SatelliteControl();
+    window._nhlSatelliteControl = satelliteControl;
+    map.addControl(satelliteControl, 'top-left');
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.addControl(new HomeControl(), 'top-left');
     map.addControl(new mapboxgl.AttributionControl({

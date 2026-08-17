@@ -15,12 +15,15 @@
         <script src="js/landmark-utils.js?v=20260803-modules"></script>
         <script src="js/slider.js?v=20260803-modules"></script>
         <script src="js/results-panel.js?v=20260803-modules"></script>
-        <script src="js/filter-panel.js?v=20260803-modules"></script>
-        <script src="js/ui.js"></script>
+        <script src="js/filter-panel.js?v=20260817-learn-panels"></script>
+        <script src="js/finder-panel.js?v=20260817-learn-panels"></script>
+        <script src="js/learn-panel.js?v=20260817-learn-panels"></script>
+        <script src="js/view-switcher.js?v=20260817-learn-panels"></script>
+        <script src="js/ui.js?v=20260817-learn-panels"></script>
         <script src="js/hover-info-box.js"></script>
         <script src="js/data-actions.js?v=20260803-export"></script>
-        <script src="js/map-layers.js"></script>
-        <script src="js/map.js"></script>
+        <script src="js/map-layers.js?v=20260817-learn-panels"></script>
+        <script src="js/map.js?v=20260817-learn-panels"></script>
 
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css">
         <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
@@ -33,12 +36,68 @@
         <link rel="stylesheet" href="css/hover-info-box.css">
         <link rel="stylesheet" href="css/side-panel.css?v=20260803-modules">
         <link rel="stylesheet" href="css/results-panel.css?v=20260803-modules">
+        <link rel="stylesheet" href="css/view-switcher.css?v=20260817-learn-panels">
+        <link rel="stylesheet" href="css/finder-panel.css?v=20260817-learn-panels">
+        <link rel="stylesheet" href="css/learn-panel.css?v=20260817-learn-panels">
     </head>
     <body>
-        <main>
-            <aside id="filter-panel" aria-labelledby="filter-panel-title">
+        <main data-active-view="learn">
+            <header id="view-switcher" aria-label="Map view">
+                <div class="view-tabs" role="tablist" aria-label="Choose a map view">
+                    <button id="learn-tab" class="view-tab" type="button" role="tab" data-view-tab="learn" aria-selected="true" aria-controls="learn-view">Learn</button>
+                    <button id="explore-tab" class="view-tab" type="button" role="tab" data-view-tab="explore" aria-selected="false" aria-controls="explore-view" tabindex="-1">Explore</button>
+                </div>
+                <div class="view-switcher-fill" aria-hidden="true"></div>
+            </header>
+
+            <section id="learn-view" role="tabpanel" aria-labelledby="learn-tab">
+                <aside id="finder-panel" class="learn-view-panel" data-view-panel="learn" aria-labelledby="finder-panel-title">
+                    <header class="finder-panel-header">
+                        <h1 id="finder-panel-title">Spotlight Landmarks</h1>
+                    </header>
+
+                    <div class="finder-panel-body">
+                        <p class="finder-panel-intro">Learn more about specific spotlight landmarks that the Monumental Denial team has researched</p>
+
+                        <section class="featured-spotlights" aria-labelledby="featured-spotlights-title">
+                            <h2 id="featured-spotlights-title">Featured spotlight landmarks</h2>
+                            <ul id="featured-spotlight-list" class="featured-spotlight-list"></ul>
+                            <button id="random-spotlight-landmark" type="button" class="random-spotlight-button" disabled>
+                                <i class="fa-light fa-shuffle" aria-hidden="true"></i>
+                                Random spotlight landmark
+                            </button>
+                        </section>
+
+                        <div class="finder-panel-fields">
+                            <label for="spotlight-landmark-search">Search by name</label>
+                            <input id="spotlight-landmark-search" type="search" disabled>
+
+                            <label for="spotlight-state-select">Search by state or territory</label>
+                            <select id="spotlight-state-select" disabled>
+                                <option>Browse by state or territory</option>
+                            </select>
+                        </div>
+                    </div>
+                </aside>
+
+                <aside id="learn-panel" class="learn-view-panel" data-view-panel="learn" aria-labelledby="learn-panel-title">
+                    <article class="learn-story">
+                        <h2 id="learn-panel-title" class="learn-story-title">Landmark title</h2>
+                        <div id="learn-story-location" class="learn-story-location">
+                            <i class="fa-light fa-location-dot" aria-hidden="true"></i>
+                            City, State
+                        </div>
+                        <div class="learn-story-rule"></div>
+                        <p id="learn-story-excerpt">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum...</p>
+                        <a id="learn-story-link" class="learn-story-link" href="#">Read the full article <i class="fa-light fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+                    </article>
+                </aside>
+            </section>
+
+            <section id="explore-view" role="tabpanel" aria-labelledby="explore-tab" hidden>
+                <aside id="filter-panel" data-view-panel="explore" aria-labelledby="filter-panel-title">
                 <header class="filter-panel-header">
-                    <span class="active-filter-label">Filters <span id="active-filter-count" class="count-badge count-badge--zero" aria-live="polite">0</span></span>
+                    <span id="filter-panel-title" class="active-filter-label">Filters <span id="active-filter-count" class="count-badge count-badge--zero" aria-live="polite">0</span></span>
                 </header>
                 <div class="filter-panel-body">
 
@@ -234,7 +293,7 @@
                 </footer>
             </aside>
 
-            <aside id="side-panel" aria-label="Filtered monument results">
+            <aside id="side-panel" data-view-panel="explore" aria-label="Filtered monument results">
                 <section id="results-view">
                     <header class="results-header">
                         <h2><span id="results-count">0</span> filtered results</h2>
@@ -295,6 +354,7 @@
                     <div id="sp-desc">Site description</div>
                 </section>
             </aside>
+            </section>
 
             <div id="map"></div>
         </main>

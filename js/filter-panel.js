@@ -1419,6 +1419,12 @@
             });
         });
         listen(window, 'resize', repositionOpenMenus);
+        listen(window, 'nhl:viewchange', event => {
+            if (event.detail?.view === 'explore') return;
+            setSortMenuOpen(false);
+            setExportMenuOpen(false);
+            closeAllMultiSelects();
+        });
         listen(document.querySelector('#filter-panel .filter-panel-body'), 'scroll', repositionOpenMenus);
         listen(resultsList, 'scroll', repositionOpenMenus);
         listen(document, 'keydown', event => {

@@ -3,6 +3,9 @@
 const FLY_TO_MAX_ZOOM = 7;
 
 $(document).ready(function() {
+    window.setupFinderPanel?.();
+    window.setupLearnPanel?.();
+    window.setupViewSwitcher?.();
     mapInits();
     setTimeout(setupUI, 500);
     updateSidePanelVisibility();
@@ -96,7 +99,7 @@ function renderModePillsHtml(modes) {
 }
 
 function renderHoverInfoIconHtml(label) {
-    return `<span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about ${label}" data-hover-info="Placeholder text"><i class="fa-light fa-circle-info"></i></span>`;
+    return `<span class="hover-info-trigger" tabindex="0" role="button" aria-label="More info about ${label}" data-hover-info="${label} details"><i class="fa-light fa-circle-info"></i></span>`;
 }
 
 // wires mouse and keyboard events to one shared hover tooltip
@@ -112,7 +115,7 @@ function setupHoverInfoIcons(root = document) {
         trigger._hoverInfoInitialized = true;
 
         const showInfo = (event) => {
-            infoBox.show({ infoLines: [trigger.dataset.hoverInfo || 'Placeholder text'] });
+            infoBox.show({ infoLines: [trigger.dataset.hoverInfo || 'Additional information'] });
 
             if (event?.clientX && event?.clientY) {
                 // pointer events keep the tooltip beside the cursor
@@ -378,6 +381,8 @@ function setupUI() {
     });
 
     const handleLandmarkClick = (e) => {
+        // Learn keeps marker context and hover cards without opening Explore details
+        if (window._nhlViewSwitcher?.getView() !== 'explore') return;
         selectLandmark(e.features[0]);
     };
     map.on('click', 'backgroundlandmark', handleLandmarkClick);

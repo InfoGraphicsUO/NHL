@@ -1,0 +1,218 @@
+:root {
+    --view-switcher-height: 4rem;
+    --view-overlay-gutter: 1.25rem;
+    --view-panel-width: 28rem;
+    --view-panel-top: calc(var(--view-switcher-height) + var(--view-overlay-gutter));
+    --view-panel-max-height: calc(100vh - var(--view-panel-top) - var(--view-overlay-gutter));
+    --view-panel-max-height: calc(100dvh - var(--view-panel-top) - var(--view-overlay-gutter));
+}
+
+main {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+}
+
+#map {
+    z-index: 0;
+}
+
+#view-switcher {
+    position: absolute;
+    z-index: 50;
+    top: 0;
+    left: 0;
+    display: flex;
+    width: 100%;
+    height: var(--view-switcher-height);
+    background: #fff;
+}
+
+.view-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(7.5rem, 1fr));
+    gap: 0.5rem;
+    margin-left: 1.3rem;
+}
+
+.view-tab {
+    position: relative;
+    display: grid;
+    min-width: 7.5rem;
+    border: 0;
+    border-radius: 0.45rem 0.45rem 0 0;
+    background: #bcc8d4;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.015em;
+    place-items: center;
+    text-shadow: 0 0.03rem 0.1rem rgba(0, 0, 0, 0.7);
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.view-tab[aria-selected="true"] {
+    /* background: #666b6e; */
+    color: var(--filter-gold-light);
+}
+
+.view-tab:hover {
+    background: #929ba5;
+}
+
+.view-tab:focus-visible {
+    z-index: 1;
+    outline: 0.2rem solid var(--filter-gold-light);
+    outline-offset: -0.3rem;
+}
+
+.view-switcher-fill {
+    min-width: 0;
+    flex: 1;
+    background: #fff;
+    box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.15);
+}
+
+#learn-view,
+#explore-view {
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+    pointer-events: none;
+}
+
+#learn-view[hidden],
+#explore-view[hidden] {
+    display: none;
+}
+
+main[data-active-view="learn"] [data-view-panel="explore"],
+main[data-active-view="explore"] [data-view-panel="learn"] {
+    display: none;
+}
+
+#filter-panel,
+#side-panel,
+#finder-panel,
+#learn-panel {
+    top: var(--view-panel-top);
+    width: min(var(--view-panel-width), calc(100vw - var(--view-overlay-gutter) - var(--view-overlay-gutter)));
+    max-height: var(--view-panel-max-height);
+}
+
+#side-panel.showing-results {
+    max-height: min(70vh, var(--view-panel-max-height));
+}
+
+#filter-panel,
+#finder-panel {
+    left: var(--view-overlay-gutter);
+}
+
+#side-panel,
+#learn-panel {
+    right: var(--view-overlay-gutter);
+}
+
+.mapboxgl-ctrl-top-left,
+.mapboxgl-ctrl-top-right {
+    top: calc(var(--view-switcher-height) + 0.7rem);
+}
+
+.learn-view-panel {
+    position: absolute;
+    z-index: 30;
+    display: flex;
+    box-sizing: border-box;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #fff;
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.15);
+    color: #1f1f1f;
+    pointer-events: auto;
+}
+
+@media (max-width: 70rem) {
+    :root {
+        --view-panel-top: calc(var(--view-switcher-height) + var(--view-overlay-gutter) + 2.7rem);
+    }
+
+    #learn-view {
+        top: var(--view-panel-top);
+        right: auto;
+        bottom: var(--view-overlay-gutter);
+        left: var(--view-overlay-gutter);
+        display: flex;
+        width: min(var(--view-panel-width), calc(100vw - var(--view-overlay-gutter) - var(--view-overlay-gutter)));
+        flex-direction: column;
+        gap: var(--view-overlay-gutter);
+        overflow-x: hidden;
+        overflow-y: auto;
+        pointer-events: auto;
+        scrollbar-gutter: stable;
+    }
+
+    #finder-panel,
+    #learn-panel {
+        position: static;
+        width: 100%;
+        max-height: none;
+        flex: 0 0 auto;
+    }
+
+    #learn-panel {
+        min-height: 16rem;
+    }
+
+    .mapboxgl-ctrl-top-left {
+        right: var(--view-overlay-gutter);
+        left: auto;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+
+    .mapboxgl-ctrl-top-left .mapboxgl-ctrl {
+        margin: 0;
+        float: none;
+        clear: none;
+    }
+
+    .mapboxgl-ctrl-top-left .mapboxgl-ctrl-group {
+        display: flex;
+    }
+
+    .mapboxgl-ctrl-top-left .mapboxgl-ctrl-group button + button {
+        border-top: 0;
+        border-left: 1px solid rgba(0, 0, 0, 0.08);
+    }
+}
+
+@media (max-width: 34rem) {
+    :root {
+        --view-switcher-height: 3.5rem;
+        --view-overlay-gutter: 0.75rem;
+        --view-panel-top: calc(var(--view-switcher-height) + var(--view-overlay-gutter) + 2.7rem);
+    }
+
+    .view-tabs {
+        grid-template-columns: repeat(2, minmax(6.5rem, 1fr));
+    }
+
+    .view-tab {
+        min-width: 6.5rem;
+    }
+
+    .view-switcher-fill {
+        min-width: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .view-tab {
+        transition: none;
+    }
+}
