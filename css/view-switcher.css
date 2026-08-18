@@ -1,5 +1,5 @@
 :root {
-    --view-switcher-height: 4rem;
+    --view-switcher-height: 3rem;
     --view-overlay-gutter: 1.25rem;
     --view-panel-width: 28rem;
     --view-panel-top: calc(var(--view-switcher-height) + var(--view-overlay-gutter));
