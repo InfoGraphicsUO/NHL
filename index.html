@@ -19,7 +19,8 @@
         <script src="js/finder-panel.js?v=20260817-learn-panels"></script>
         <script src="js/learn-panel.js?v=20260817-learn-panels"></script>
         <script src="js/view-switcher.js?v=20260817-learn-panels"></script>
-        <script src="js/ui.js?v=20260817-learn-panels"></script>
+        <script src="js/recording-controls.js?v=20261030-recording"></script>
+        <script src="js/ui.js?v=20261030-recording"></script>
         <script src="js/hover-info-box.js"></script>
         <script src="js/data-actions.js?v=20260803-export"></script>
         <script src="js/map-layers.js?v=20260817-learn-panels"></script>
@@ -39,6 +40,7 @@
         <link rel="stylesheet" href="css/view-switcher.css?v=20260817-learn-panels">
         <link rel="stylesheet" href="css/finder-panel.css?v=20260817-learn-panels">
         <link rel="stylesheet" href="css/learn-panel.css?v=20260817-learn-panels">
+        <link rel="stylesheet" href="css/recording-controls.css?v=20261030-recording">
     </head>
     <body>
         <main data-active-view="learn">
@@ -47,7 +49,38 @@
                     <button id="learn-tab" class="view-tab" type="button" role="tab" data-view-tab="learn" aria-selected="true" aria-controls="learn-view">Learn</button>
                     <button id="explore-tab" class="view-tab" type="button" role="tab" data-view-tab="explore" aria-selected="false" aria-controls="explore-view" tabindex="-1">Explore</button>
                 </div>
-                <div class="view-switcher-fill" aria-hidden="true"></div>
+                <div class="view-switcher-fill">
+                    <label class="recording-toggle-row" for="recording-toggle">
+                        <input type="checkbox" id="recording-toggle" disabled>
+                        <span>Show recording controls</span>
+                    </label>
+                    <form id="recording-form" hidden>
+                        <div class="recording-group">
+                            <label>Landmark
+                                <select id="recording-landmark" required>
+                                    <option value="">Choose a landmark...</option>
+                                </select>
+                            </label>
+                            <label>Zoom level (0-22)
+                                <input id="recording-zoom" type="number" min="0" max="22" step="0.1" value="13" required>
+                            </label>
+                            <label>Fly speed (default 1.2, lower is slower)
+                                <input id="recording-speed" type="number" min="0.1" max="10" step="0.1" value="1.2" required>
+                            </label>
+                        </div>
+                        <div class="recording-group">
+                            <button id="recording-start" type="submit">Start</button>
+                            <button id="recording-reset" type="button">Reset view</button>
+                            <span id="recording-status" aria-live="polite"></span>
+                        </div>
+                        <div class="recording-group">
+                            <span class="recording-group-title">Show:</span>
+                            <label><input type="checkbox" class="recording-panel-toggle" value="filters" checked> Filters panel</label>
+                            <label><input type="checkbox" class="recording-panel-toggle" value="results" checked> Results/details panel</label>
+                            <label><input type="checkbox" class="recording-panel-toggle" value="map-buttons" checked> Map buttons</label>
+                        </div>
+                    </form>
+                </div>
             </header>
 
             <section id="learn-view" role="tabpanel" aria-labelledby="learn-tab">

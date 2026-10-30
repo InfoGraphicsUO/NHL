@@ -1,0 +1,75 @@
+/* internal demo tool, cropped out of recordings */
+:root.recording-open {
+    --view-switcher-height: 6rem;
+}
+
+.recording-open .view-tabs {
+    height: 3rem;
+}
+
+.view-switcher-fill {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    padding: 0 1rem;
+    color: #1f1f1f;
+    font-size: 0.8rem;
+}
+
+main[data-active-view="learn"] .recording-toggle-row {
+    display: none;
+}
+
+.recording-toggle-row,
+#recording-form,
+.recording-group,
+.recording-group label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+}
+
+.recording-toggle-row {
+    font-weight: 700;
+}
+
+#recording-form {
+    flex: 1 1 100%;
+    gap: 0.4rem 1.25rem;
+}
+
+#recording-form[hidden] {
+    display: none;
+}
+
+.recording-group {
+    gap: 0.4rem 0.75rem;
+}
+
+.recording-group-title {
+    font-weight: 700;
+}
+
+#recording-landmark {
+    width: 18rem;
+}
+
+#recording-zoom,
+#recording-speed {
+    width: 4.5rem;
+}
+
+#recording-status {
+    min-width: 6rem;
+    font-weight: 700;
+}
+
+.recording-hide-filters #filter-panel,
+.recording-hide-results #side-panel,
+.recording-hide-map-buttons .mapboxgl-ctrl-top-left {
+    display: none;
+}
