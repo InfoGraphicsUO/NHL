@@ -46,7 +46,6 @@ function setupRecordingControls(map, selection) {
     // panel settings only apply while the controls are showing in Explore
     function syncControls() {
         const open = toggle.checked && window._nhlViewSwitcher?.getView() === 'explore';
-        root.classList.toggle('recording-open', open);
         form.hidden = !open;
         panelBoxes.forEach(box => {
             root.classList.toggle(`recording-hide-${box.value}`, open && !box.checked);

@@ -19,7 +19,7 @@
         <script src="js/finder-panel.js?v=20260817-learn-panels"></script>
         <script src="js/learn-panel.js?v=20260817-learn-panels"></script>
         <script src="js/view-switcher.js?v=20260817-learn-panels"></script>
-        <script src="js/recording-controls.js?v=20261030-recording"></script>
+        <script src="js/recording-controls.js?v=20261030-recording-row"></script>
         <script src="js/ui.js?v=20261030-recording"></script>
         <script src="js/hover-info-box.js"></script>
         <script src="js/data-actions.js?v=20260803-export"></script>
@@ -40,7 +40,7 @@
         <link rel="stylesheet" href="css/view-switcher.css?v=20260817-learn-panels">
         <link rel="stylesheet" href="css/finder-panel.css?v=20260817-learn-panels">
         <link rel="stylesheet" href="css/learn-panel.css?v=20260817-learn-panels">
-        <link rel="stylesheet" href="css/recording-controls.css?v=20261030-recording">
+        <link rel="stylesheet" href="css/recording-controls.css?v=20261030-recording-row">
     </head>
     <body>
         <main data-active-view="learn">
@@ -55,28 +55,24 @@
                         <span>Show recording controls</span>
                     </label>
                     <form id="recording-form" hidden>
-                        <div class="recording-group">
-                            <label>Landmark
-                                <select id="recording-landmark" required>
-                                    <option value="">Choose a landmark...</option>
-                                </select>
-                            </label>
-                            <label>Zoom level (0-22)
-                                <input id="recording-zoom" type="number" min="0" max="22" step="0.1" value="13" required>
-                            </label>
-                            <label>Fly speed (default 1.2, lower is slower)
-                                <input id="recording-speed" type="number" min="0.1" max="10" step="0.1" value="1.2" required>
-                            </label>
-                        </div>
-                        <div class="recording-group">
-                            <button id="recording-start" type="submit">Start</button>
-                            <button id="recording-reset" type="button">Reset view</button>
-                            <span id="recording-status" aria-live="polite"></span>
-                        </div>
-                        <div class="recording-group">
-                            <span class="recording-group-title">Show:</span>
-                            <label><input type="checkbox" class="recording-panel-toggle" value="filters" checked> Filters panel</label>
-                            <label><input type="checkbox" class="recording-panel-toggle" value="results" checked> Results/details panel</label>
+                        <label class="recording-field recording-landmark-field">Landmark
+                            <select id="recording-landmark" required>
+                                <option value="">Choose a landmark...</option>
+                            </select>
+                        </label>
+                        <label class="recording-field">Zoom (0-22)
+                            <input id="recording-zoom" type="number" min="0" max="22" step="0.1" value="13" required>
+                        </label>
+                        <label class="recording-field">Fly speed (lower = slower)
+                            <input id="recording-speed" type="number" min="0.1" max="10" step="0.1" value="1.2" required>
+                        </label>
+                        <button id="recording-start" type="submit">Start</button>
+                        <button id="recording-reset" type="button">Reset view</button>
+                        <span id="recording-status" aria-live="polite"></span>
+                        <div class="recording-panels">
+                            <span>Show:</span>
+                            <label><input type="checkbox" class="recording-panel-toggle" value="filters" checked> Filters</label>
+                            <label><input type="checkbox" class="recording-panel-toggle" value="results" checked> Results</label>
                             <label><input type="checkbox" class="recording-panel-toggle" value="map-buttons" checked> Map buttons</label>
                         </div>
                     </form>

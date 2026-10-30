@@ -1,21 +1,15 @@
 /* internal demo tool, cropped out of recordings */
-:root.recording-open {
-    --view-switcher-height: 6rem;
-}
-
-.recording-open .view-tabs {
-    height: 3rem;
-}
-
 .view-switcher-fill {
     display: flex;
-    flex-wrap: wrap;
-    align-content: center;
     align-items: center;
-    gap: 0.4rem 1rem;
+    gap: 1rem;
     padding: 0 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
     color: #1f1f1f;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    white-space: nowrap;
 }
 
 main[data-active-view="learn"] .recording-toggle-row {
@@ -23,13 +17,10 @@ main[data-active-view="learn"] .recording-toggle-row {
 }
 
 .recording-toggle-row,
-#recording-form,
-.recording-group,
-.recording-group label {
+.recording-panels label {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.25rem;
     margin: 0;
 }
 
@@ -38,34 +29,58 @@ main[data-active-view="learn"] .recording-toggle-row {
 }
 
 #recording-form {
-    flex: 1 1 100%;
-    gap: 0.4rem 1.25rem;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 #recording-form[hidden] {
     display: none;
 }
 
-.recording-group {
-    gap: 0.4rem 0.75rem;
+.recording-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0;
 }
 
-.recording-group-title {
-    font-weight: 700;
+.recording-field select,
+.recording-field input {
+    height: 1.4rem;
+    font-size: 0.7rem;
+}
+
+.recording-landmark-field {
+    flex: 1;
+    min-width: 9rem;
+    max-width: 22rem;
 }
 
 #recording-landmark {
-    width: 18rem;
+    width: 100%;
 }
 
 #recording-zoom,
 #recording-speed {
-    width: 4.5rem;
+    width: 4rem;
+}
+
+#recording-form button {
+    height: 1.6rem;
+    padding: 0 0.4rem;
 }
 
 #recording-status {
-    min-width: 6rem;
+    min-width: 4.5rem;
     font-weight: 700;
+}
+
+.recording-panels {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0.15rem 0.6rem;
 }
 
 .recording-hide-filters #filter-panel,
