@@ -275,7 +275,7 @@ function setupUI() {
     }
 
     // selects one map feature and opens its detail view
-    function selectLandmark(feature) {
+    function selectLandmark(feature, { recenter = true } = {}) {
         if (!feature?.properties || !feature?.geometry?.coordinates) return;
 
         const props = feature.properties;
@@ -302,7 +302,7 @@ function setupUI() {
         }
 
         // preserve a close view while helping users orient from a wide view
-        if (map.getZoom() < FLY_TO_MAX_ZOOM) {
+        if (recenter && map.getZoom() < FLY_TO_MAX_ZOOM) {
             map.flyTo({
                 center: coordinates,
                 zoom: 13
@@ -357,6 +357,8 @@ function setupUI() {
             onSelectLandmark: selectLandmark,
             onClearSelection: clearLandmarkSelection
         });
+
+        setupRecordingControls(map, { select: selectLandmark, clear: clearLandmarkSelection });
     }
 
     // source data can arrive after the map style has already loaded

@@ -1,0 +1,90 @@
+/* internal demo tool, cropped out of recordings */
+.view-switcher-fill {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    color: #1f1f1f;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+main[data-active-view="learn"] .recording-toggle-row {
+    display: none;
+}
+
+.recording-toggle-row,
+.recording-panels label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+}
+
+.recording-toggle-row {
+    font-weight: 700;
+}
+
+#recording-form {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+#recording-form[hidden] {
+    display: none;
+}
+
+.recording-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0;
+}
+
+.recording-field select,
+.recording-field input {
+    height: 1.4rem;
+    font-size: 0.7rem;
+}
+
+.recording-landmark-field {
+    flex: 1;
+    min-width: 9rem;
+    max-width: 22rem;
+}
+
+#recording-landmark {
+    width: 100%;
+}
+
+#recording-zoom,
+#recording-speed {
+    width: 4rem;
+}
+
+#recording-form button {
+    height: 1.6rem;
+    padding: 0 0.4rem;
+}
+
+#recording-status {
+    min-width: 4.5rem;
+    font-weight: 700;
+}
+
+.recording-panels {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0.15rem 0.6rem;
+}
+
+.recording-hide-filters #filter-panel,
+.recording-hide-results #side-panel,
+.recording-hide-map-buttons .mapboxgl-ctrl-top-left {
+    display: none;
+}
