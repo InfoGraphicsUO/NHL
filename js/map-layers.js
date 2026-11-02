@@ -25,6 +25,14 @@ const NOSYMBOLOGY_LAYERS = [
 // active point layers when mode symbology is enabled
 const SYMBOLOGY_LAYERS = ['landmarks-shadow', 'landmarks-outline', 'landmarks-halo', 'landmarks', 'landmarks-selected'];
 
+// grey markers for points hidden by the current filters
+const BACKGROUND_LAYERS = [
+    'backgroundlandmark',
+    'backgroundlandmark-halo',
+    'backgroundlandmark-selected',
+    'backgroundlandmark-outline'
+];
+
 // every marker layer that can start or continue a hover interaction
 const LANDMARK_HOVER_LAYERS = [
     'backgroundlandmark',
@@ -199,10 +207,15 @@ function filterBasemapLabelsToUS(map) {
     });
 }
 
+// loaded icons are kept so they can be re-added after a basemap style swap
+const LANDMARK_ICON_IMAGES = new Map();
+const LANDMARK_SOURCE_ID = 'landmark-point-data';
+
 function addMapIcon(map, id, url) {
     // load image assets before layers reference their ids
     const image = new Image();
     image.onload = () => {
+        LANDMARK_ICON_IMAGES.set(id, image);
         if (!map.hasImage(id)) {
             map.addImage(id, image);
         }
@@ -211,6 +224,28 @@ function addMapIcon(map, id, url) {
         console.warn(`Could not load map icon: ${url}`);
     };
     image.src = url;
+}
+
+function getLandmarkLayers(map) {
+    // current landmark layers, including their live filters and visibility
+    if (!map.getSource(LANDMARK_SOURCE_ID)) return [];
+    return map.getStyle().layers.filter(layer => layer.source === LANDMARK_SOURCE_ID);
+}
+
+function restoreLandmarkLayers(map, layers) {
+    // re-add the landmark source, icons and layers on top of a freshly loaded basemap
+    filterBasemapLabelsToUS(map);
+    if (!map._landmarkSourceData || !layers?.length) return;
+
+    LANDMARK_ICON_IMAGES.forEach((image, id) => {
+        if (!map.hasImage(id)) map.addImage(id, image);
+    });
+    if (!map.getSource(LANDMARK_SOURCE_ID)) {
+        map.addSource(LANDMARK_SOURCE_ID, { type: 'geojson', data: map._landmarkSourceData });
+    }
+    layers.forEach(layer => {
+        if (!map.getLayer(layer.id)) map.addLayer(layer);
+    });
 }
 
 function setupLandmarkHover(map, landmarkLayers) {
@@ -363,7 +398,7 @@ function addMapLayers(map) {
         map._landmarkSourceData = landmarkSourceData;
 
         // source data is loaded once and reused by every marker layer
-        map.addSource('landmark-point-data', {
+        map.addSource(LANDMARK_SOURCE_ID, {
             type: 'geojson',
             data: landmarkSourceData
         });
@@ -392,21 +427,6 @@ function addMapLayers(map) {
 
         Object.entries(icons).forEach(([id, url]) => {
             addMapIcon(map, id, url);
-        });
-
-        // satellite basemap sits under markers; visibility is toggled by SatelliteControl
-        map.addSource('basemap-satellite', {
-            type: 'raster',
-            url: 'mapbox://mapbox.satellite',
-            tileSize: 256
-        });
-        map.addLayer({
-            id: 'basemap-satellite',
-            type: 'raster',
-            source: 'basemap-satellite',
-            layout: {
-                visibility: 'none'
-            }
         });
 
         // background layers keep filtered-out points visible and selectable
