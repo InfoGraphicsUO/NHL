@@ -31,6 +31,16 @@
     padding: 0.2rem 0.4rem;
 }
 
+.year-play-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.year-play-button i {
+    font-size: 0.6rem;
+}
+
 .reset-button:hover {
     background: var(--slider-handle-hover);
 }

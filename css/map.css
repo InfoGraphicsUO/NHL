@@ -26,28 +26,35 @@
     line-height: 1;
 }
 
-.mapboxgl-ctrl-satellite button {
-    display: inline-flex;
+.mapboxgl-ctrl-basemap label {
+    display: flex;
     align-items: center;
-    justify-content: center;
     gap: 0.35rem;
-    width: auto;
-    min-width: 1.8125rem;
     height: 1.8125rem;
-    padding: 0 0.55rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    line-height: 1;
-    white-space: nowrap;
-    font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0 0.3rem 0 0.55rem;
+    background: #fff;
+    cursor: pointer;
 }
 
-.mapboxgl-ctrl-satellite button i {
+.mapboxgl-ctrl-basemap i {
     font-size: 0.95rem;
 }
 
-.mapboxgl-ctrl-satellite button.is-active {
-    background: #e8e8e8;
+.mapboxgl-ctrl-basemap select {
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: #333;
+    cursor: pointer;
+    font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.mapboxgl-ctrl-basemap select:focus-visible {
+    outline: 2px solid var(--filter-gold, #333);
+    outline-offset: -2px;
 }
 
 .mapboxgl-ctrl-top-left {

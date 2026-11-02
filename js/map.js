@@ -50,69 +50,81 @@ class HomeControl {
     }
 }
 
-const SATELLITE_LAYER_ID = 'basemap-satellite';
 const DEFAULT_STYLE_URL = 'mapbox://styles/infographics/cmlhb3rze006q01sn2k2k5qki';
 
-class SatelliteControl {
-    // mapbox control that toggles the satellite basemap under markers
+// basemap choices shown in the map's style selector
+const BASEMAP_STYLES = [
+    { id: 'nhl', label: 'Default', url: DEFAULT_STYLE_URL },
+    { id: 'streets', label: 'Streets', url: 'mapbox://styles/mapbox/streets-v12' },
+    { id: 'outdoors', label: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v12' },
+    { id: 'light', label: 'Light', url: 'mapbox://styles/mapbox/light-v11' },
+    { id: 'dark', label: 'Dark', url: 'mapbox://styles/mapbox/dark-v11' },
+    { id: 'satellite', label: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
+    { id: 'satellite-streets', label: 'Satellite Streets', url: 'mapbox://styles/mapbox/satellite-streets-v12' }
+];
+
+class BasemapControl {
+    // mapbox control that swaps the basemap style and keeps the landmark layers on top
     onAdd(map) {
         this._map = map;
-        this._enabled = false;
+        this._styleId = BASEMAP_STYLES[0].id;
+        this._switchToken = 0;
         this._container = document.createElement('div');
-        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group mapboxgl-ctrl-satellite';
+        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group mapboxgl-ctrl-basemap';
 
-        this._button = document.createElement('button');
-        this._button.type = 'button';
-        this._button.setAttribute('aria-pressed', 'false');
-        this._syncButton();
-        this._button.addEventListener('click', () => {
-            this._setEnabled(!this._enabled);
+        const label = document.createElement('label');
+        label.title = 'Basemap';
+        label.innerHTML = '<i class="fa-regular fa-layer-group" aria-hidden="true"></i>';
+
+        this._select = document.createElement('select');
+        this._select.setAttribute('aria-label', 'Basemap');
+        BASEMAP_STYLES.forEach(style => this._select.add(new Option(style.label, style.id)));
+        this._select.addEventListener('change', () => this.setStyleId(this._select.value));
+
+        // the landmark layers have to exist before a swap can carry them over
+        this._select.disabled = true;
+        const enableWhenReady = () => {
+            if (map.getLayer('landmarks')) this._select.disabled = false;
+            else map.once('idle', enableWhenReady);
+        };
+        map.once('idle', enableWhenReady);
+
+        label.appendChild(this._select);
+        this._container.appendChild(label);
+
+        // classic styles set their own projection, so keep the one the app started with
+        map.once('style.load', () => {
+            this._projection = map.getProjection()?.name;
         });
-
-        this._container.appendChild(this._button);
         return this._container;
     }
 
-    _syncButton() {
-        const action = this._enabled ? 'Switch to default basemap' : 'Switch to satellite basemap';
-        this._button.title = action;
-        this._button.setAttribute('aria-label', action);
-        this._button.setAttribute('aria-pressed', this._enabled ? 'true' : 'false');
-        this._button.classList.toggle('is-active', this._enabled);
-        this._button.innerHTML = this._enabled
-            ? '<i class="fa-solid fa-map" aria-hidden="true"></i><span>Default Map</span>'
-            : '<i class="fa-regular fa-earth-americas" aria-hidden="true"></i><span>Satellite</span>';
+    getStyleId() {
+        return this._styleId;
     }
 
-    _setEnabled(enabled) {
-        this._pendingEnabled = enabled;
-        this._enabled = enabled;
-        this._syncButton();
+    setStyleId(styleId) {
+        const style = BASEMAP_STYLES.find(item => item.id === styleId);
+        if (!style || style.id === this._styleId) return;
 
-        const tryApply = () => {
-            const map = this._map;
-            if (!map.getLayer(SATELLITE_LAYER_ID)) {
-                // layer is created after landmark data loads
-                map.once('idle', tryApply);
-                return;
-            }
+        const map = this._map;
+        this._styleId = style.id;
+        this._select.value = style.id;
 
-            map.setLayoutProperty(
-                SATELLITE_LAYER_ID,
-                'visibility',
-                this._pendingEnabled ? 'visible' : 'none'
-            );
-        };
+        // custom sources and layers are dropped by setStyle, so carry the current ones over;
+        // a switch made while another is still loading reuses the layers saved by the first
+        if (!this._pendingLayers) {
+            this._pendingLayers = getLandmarkLayers(map);
+        }
 
-        tryApply();
-    }
-
-    isEnabled() {
-        return this._enabled;
-    }
-
-    setEnabled(enabled) {
-        this._setEnabled(Boolean(enabled));
+        const token = ++this._switchToken;
+        map.once('style.load', () => {
+            if (token !== this._switchToken) return;
+            if (this._projection) map.setProjection(this._projection);
+            restoreLandmarkLayers(map, this._pendingLayers);
+            this._pendingLayers = null;
+        });
+        map.setStyle(style.url, { diff: false });
     }
 
     onRemove() {
@@ -138,9 +150,9 @@ function mapInits() {
     initDevZoomDisplay(map);
     addMapLayers(map);
 
-    const satelliteControl = new SatelliteControl();
-    window._nhlSatelliteControl = satelliteControl;
-    map.addControl(satelliteControl, 'top-left');
+    const basemapControl = new BasemapControl();
+    window._nhlBasemapControl = basemapControl;
+    map.addControl(basemapControl, 'top-left');
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.addControl(new HomeControl(), 'top-left');
     map.addControl(new mapboxgl.AttributionControl({

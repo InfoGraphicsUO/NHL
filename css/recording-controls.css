@@ -63,6 +63,7 @@ main[data-active-view="learn"] .recording-toggle-row {
 }
 
 #recording-zoom,
+#recording-peak-zoom,
 #recording-speed {
     width: 4rem;
 }
@@ -79,8 +80,13 @@ main[data-active-view="learn"] .recording-toggle-row {
 
 .recording-panels {
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: auto auto auto;
+    align-items: center;
     gap: 0.15rem 0.6rem;
+}
+
+.recording-panels > span {
+    grid-row: span 2;
 }
 
 .recording-hide-filters #filter-panel,

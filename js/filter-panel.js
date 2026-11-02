@@ -17,6 +17,8 @@
         nomination: 'Areas_of_Signifance_Nomination_Forms'
     };
     const SELECT_FIELDS = {};
+    // time each year is shown while the year designated filter plays
+    const YEAR_PLAYBACK_STEP_MS = 250;
     // field metadata shared by multi select menus and filter matching
     const MULTI_SELECT_FIELDS = {
         state: {
@@ -310,9 +312,12 @@
         function onDraftChange() {
             updateDraftIndicators();
             Object.keys(MULTI_SELECT_FIELDS).forEach(syncMultiSelectLabel);
-            if (isAutoUpdateEnabled()) applyFilters();
+            // playback applies each step itself without reopening results or clearing the selection
+            if (isAutoUpdateEnabled() && !yearPlayback.isStepping) applyFilters();
             syncApplyButtonState();
         }
+
+        const yearPlayback = { isStepping: false, stop() {} };
 
         const sliders = typeof setupFilterYearSliders === 'function'
             ? setupFilterYearSliders({ onDraftChange })
@@ -1055,6 +1060,7 @@
             if (restricted?.type === 'checkbox') restricted.checked = false;
             else if (restricted) restricted.value = restricted.querySelector?.('option[value="show"]') ? 'show' : '';
 
+            yearPlayback.stop();
             sliders.reset();
             onDraftChange();
         }
@@ -1173,6 +1179,77 @@
             }, RESULTS_IDLE_DELAY_MS);
         }
 
+        // steps year designated forward so sites appear in the order they were designated
+        function setupYearPlayback() {
+            const button = byId('designation-year-play');
+            const slider = sliders.controllers?.nhlYear;
+            if (!button || !slider) return;
+
+            const field = YEAR_FIELD_OPTIONS.nhlYear;
+            const years = features()
+                .map(feature => parseInt(feature.properties?.[field.property], 10))
+                .filter(Number.isInteger);
+            // skip the empty years before the first designation
+            const firstYear = years.length ? Math.max(field.min, Math.min(...years)) : field.min;
+            let timer = 0;
+
+            function syncButton() {
+                const playing = Boolean(timer);
+                button.innerHTML = playing
+                    ? '<i class="fa-solid fa-pause" aria-hidden="true"></i><span>Pause</span>'
+                    : '<i class="fa-solid fa-play" aria-hidden="true"></i><span>Play</span>';
+                button.setAttribute('aria-label', playing ? 'Pause year designated' : 'Play year designated');
+            }
+
+            function showThrough(year) {
+                yearPlayback.isStepping = true;
+                try {
+                    slider.setRange([field.min, year]);
+                } finally {
+                    yearPlayback.isStepping = false;
+                }
+                applyFilters({ openResults: false, clearSelection: false });
+            }
+
+            function stop() {
+                clearInterval(timer);
+                timer = 0;
+                syncButton();
+            }
+
+            function play() {
+                yearPlayback.isStepping = true;
+                try {
+                    if (slider.getMode() === 'specific') slider.setMode('range', { preserveValue: false });
+                } finally {
+                    yearPlayback.isStepping = false;
+                }
+
+                // resume a paused run, otherwise start over from the first designation
+                const [minimum, maximum] = slider.getRange();
+                let year = minimum === field.min && maximum >= firstYear && maximum < field.max
+                    ? maximum
+                    : firstYear;
+                showThrough(year);
+
+                timer = setInterval(() => {
+                    year += 1;
+                    showThrough(year);
+                    if (year >= field.max) stop();
+                }, YEAR_PLAYBACK_STEP_MS);
+                syncButton();
+            }
+
+            yearPlayback.stop = stop;
+            listen(button, 'click', () => (timer ? stop() : play()));
+            // any manual change to the slider takes over from playback
+            listen(slider.element, 'pointerdown', stop);
+            listen(slider.element, 'keydown', stop);
+            listen(byId('designation-year-mode'), 'change', stop);
+            listen(byId('designation-year-reset'), 'click', stop);
+            listen(window, 'nhl:viewchange', stop);
+        }
+
         // public panel API used by map and detail interactions
         const controller = {
             applyFilters,
@@ -1220,6 +1297,7 @@
             },
             // returns portaled menus and removes all panel side effects
             destroy() {
+                yearPlayback.stop();
                 if (tabHeightFrame) cancelAnimationFrame(tabHeightFrame);
                 clearResultsIdleTimer();
                 clearResultsChromeInline();
@@ -1467,6 +1545,7 @@
             event.preventDefault();
             applyFilters();
         });
+        setupYearPlayback();
         // source data is ready before the initial map filter and result count
         window._nhlFilterPanelController = controller;
         resultsSortOptions.forEach(option => {

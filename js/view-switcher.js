@@ -56,7 +56,7 @@
             pitch: map.getPitch(),
             activePointFilter: cloneFilter(map._activePointFilter),
             selectedFeatureId: map._selectedFeatureId ?? null,
-            satelliteEnabled: window._nhlSatelliteControl?.isEnabled()
+            basemapStyleId: window._nhlBasemapControl?.getStyleId()
         };
     }
 
@@ -98,8 +98,8 @@
             pitch: snapshot.pitch
         });
 
-        if (typeof snapshot.satelliteEnabled === 'boolean') {
-            window._nhlSatelliteControl?.setEnabled(snapshot.satelliteEnabled);
+        if (snapshot.basemapStyleId) {
+            window._nhlBasemapControl?.setStyleId(snapshot.basemapStyleId);
         }
     }
 

@@ -7,12 +7,14 @@ function setupRecordingControls(map, selection) {
     const form = document.getElementById('recording-form');
     const landmarkSelect = document.getElementById('recording-landmark');
     const zoomInput = document.getElementById('recording-zoom');
+    const peakZoomInput = document.getElementById('recording-peak-zoom');
     const speedInput = document.getElementById('recording-speed');
     const startButton = document.getElementById('recording-start');
     const resetButton = document.getElementById('recording-reset');
     const status = document.getElementById('recording-status');
     const panelBoxes = Array.from(document.querySelectorAll('.recording-panel-toggle'));
     const resultsBox = panelBoxes.find(box => box.value === 'results');
+    const backgroundSitesBox = document.getElementById('recording-background-sites');
     const sidePanel = document.getElementById('side-panel');
     const features = map._landmarkSourceData.features;
 
@@ -51,13 +53,16 @@ function setupRecordingControls(map, selection) {
             root.classList.toggle(`recording-hide-${box.value}`, open && !box.checked);
         });
 
+        // grey filtered-out points hide so playing the year filter shows sites appearing
+        setLayerVisibility(map, BACKGROUND_LAYERS, open && !backgroundSitesBox.checked ? 'none' : 'visible');
+
         // a checked box should always mean a visible panel
         if (open && resultsBox.checked && !sidePanel.classList.contains('is-open')) {
             window._nhlFilterPanelController?.showResultsPanel();
         }
     }
 
-    function flyToLandmark(feature, zoom, speed) {
+    function flyToLandmark(feature, zoom, peakZoom, speed) {
         map.stop();
         const id = ++flightId;
         status.textContent = 'Flying...';
@@ -69,6 +74,8 @@ function setupRecordingControls(map, selection) {
         map.flyTo({
             center: feature.geometry.coordinates,
             zoom,
+            // zoom out to this level mid-flight so the whole country shows between landmarks
+            minZoom: peakZoom,
             speed,
             essential: true
         });
@@ -78,6 +85,7 @@ function setupRecordingControls(map, selection) {
         // read now because the form is only validated on submit
         const feature = features.find(item => String(item.id) === landmarkSelect.value);
         const zoom = zoomInput.valueAsNumber;
+        const peakZoom = peakZoomInput.valueAsNumber;
         const speed = speedInput.valueAsNumber;
         let remaining = RECORDING_COUNTDOWN_SECONDS;
         status.textContent = `Flying in ${remaining}...`;
@@ -91,7 +99,7 @@ function setupRecordingControls(map, selection) {
                 return;
             }
             stopCountdown();
-            flyToLandmark(feature, zoom, speed);
+            flyToLandmark(feature, zoom, peakZoom, speed);
         }, 1000);
     }
 
@@ -119,6 +127,7 @@ function setupRecordingControls(map, selection) {
         syncControls();
     });
     panelBoxes.forEach(box => box.addEventListener('change', syncControls));
+    backgroundSitesBox.addEventListener('change', syncControls);
 
     // closing the panel with its own button is the same as unchecking it
     document.getElementById('results-panel-close').addEventListener('click', () => {
