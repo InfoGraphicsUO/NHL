@@ -227,6 +227,8 @@
         const tabContent = byId('filter-content');
         const listeners = [];
         let resultsQuery = '';
+        // set while playback has changed the results without rebuilding the list
+        let resultsListStale = false;
         let selectedSort = 'best-match';
 
         // tab height animation state
@@ -917,6 +919,7 @@
         // renders the currently applied features as selectable result cards
         function renderResults() {
             if (!resultsList) return;
+            resultsListStale = false;
             resultsList.replaceChildren();
 
             const visibleResults = getVisibleResults();
@@ -1009,7 +1012,7 @@
         }
 
         // commits the draft state to the map layer and results list
-        function applyFilters({ openResults = true, clearSelection = true } = {}) {
+        function applyFilters({ openResults = true, clearSelection = true, renderList = true } = {}) {
             appliedState = readDraft();
             appliedResults = sortFeatures(
                 features().filter(feature => featureMatchesAppliedFilters(feature, appliedState)),
@@ -1020,7 +1023,15 @@
             if (typeof setActivePointFilters === 'function') setActivePointFilters(map, activeIdExpression(appliedResults));
 
             setResultsCount(appliedResults.length);
-            renderResults();
+            if (renderList) {
+                renderResults();
+            } else {
+                // rebuilding thousands of result cards each playback step stalls the map, so only the count updates
+                resultsListStale = true;
+                setHeaderResultsCount(resultsQuery.trim()
+                    ? appliedResults.filter(feature => featureMatchesResultsQuery(feature, resultsQuery)).length
+                    : appliedResults.length);
+            }
 
             if (openResults) controller.showResultsPanel();
             if (typeof options.onApply === 'function') {
@@ -1208,13 +1219,15 @@
                 } finally {
                     yearPlayback.isStepping = false;
                 }
-                applyFilters({ openResults: false, clearSelection: false });
+                applyFilters({ openResults: false, clearSelection: false, renderList: false });
             }
 
             function stop() {
                 clearInterval(timer);
                 timer = 0;
                 syncButton();
+                // the list catches up once playback pauses or ends
+                if (resultsListStale) renderResults();
             }
 
             function play() {
