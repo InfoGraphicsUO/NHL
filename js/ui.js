@@ -393,6 +393,7 @@ function setupUI() {
     map.on('click', 'nosymbologylandmark-selected', handleLandmarkClick);
     map.on('click', 'landmarks', handleLandmarkClick);
     map.on('click', 'landmarks-selected', handleLandmarkClick);
+    map.on('click', 'plain-landmark-squares', handleLandmarkClick);
 }
 
 // flags titles that wrap so the detail header can adjust its spacing

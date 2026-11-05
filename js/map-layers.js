@@ -33,8 +33,12 @@ const BACKGROUND_LAYERS = [
     'backgroundlandmark-outline'
 ];
 
+// plain square and name markers used in place of the icons for recordings
+const PLAIN_LAYERS = ['plain-landmark-labels', 'plain-landmark-squares'];
+
 // every marker layer that can start or continue a hover interaction
 const LANDMARK_HOVER_LAYERS = [
+    'plain-landmark-squares',
     'backgroundlandmark',
     'backgroundlandmark-selected',
     'nosymbologylandmark',
@@ -134,7 +138,7 @@ function setActivePointFilters(map, filterExpr) {
     const activeFilter = filterExpr || EMPTY_FILTER;
     map._activePointFilter = activeFilter;
 
-    ['nosymbologylandmark-shadow', 'nosymbologylandmark', 'landmarks-shadow', 'landmarks'].forEach(layerId => {
+    ['nosymbologylandmark-shadow', 'nosymbologylandmark', 'landmarks-shadow', 'landmarks', ...PLAIN_LAYERS].forEach(layerId => {
         if (map.getLayer(layerId)) {
             map.setFilter(layerId, activeFilter);
         }
@@ -181,8 +185,22 @@ function togglemodeSymbology(animateColors = false) {
         return;
     }
 
-    setLayerVisibility(map, SYMBOLOGY_LAYERS, isEnabled ? 'visible' : 'none');
-    setLayerVisibility(map, NOSYMBOLOGY_LAYERS, isEnabled ? 'none' : 'visible');
+    syncMarkerLayers(map);
+}
+
+function syncMarkerLayers(map) {
+    // plain markers replace both icon families while they are on
+    const plain = Boolean(map._plainMarkersEnabled);
+    const symbology = Boolean(window.modeSymbologyEnabled);
+    setLayerVisibility(map, SYMBOLOGY_LAYERS, !plain && symbology ? 'visible' : 'none');
+    setLayerVisibility(map, NOSYMBOLOGY_LAYERS, !plain && !symbology ? 'visible' : 'none');
+    setLayerVisibility(map, PLAIN_LAYERS, plain ? 'visible' : 'none');
+}
+
+function setPlainMarkers(map, enabled) {
+    if (Boolean(map._plainMarkersEnabled) === Boolean(enabled)) return;
+    map._plainMarkersEnabled = Boolean(enabled);
+    syncMarkerLayers(map);
 }
 
 function filterBasemapLabelsToUS(map) {
@@ -595,6 +613,49 @@ function addMapLayers(map) {
                 'icon-image': 'selected-outline',
                 'icon-allow-overlap': true,
                 'icon-size': iconSizeZoom(SELECTED_SCALE),
+            },
+            filter: EMPTY_FILTER
+        });
+
+        // plain markers match the nhl layers in the monumental denial style
+        map.addLayer({
+            id: 'plain-landmark-labels',
+            type: 'symbol',
+            source: LANDMARK_SOURCE_ID,
+            minzoom: 7,
+            layout: {
+                'visibility': 'none',
+                'text-field': ['to-string', ['get', 'Historic_Name']],
+                'text-justify': 'auto',
+                'text-font': ['Frutiger LT Std 67 Bold Condensed', 'Arial Unicode MS Regular'],
+                'text-size': 11,
+                'text-anchor': 'top',
+                'text-offset': [0, 0.55]
+            },
+            paint: {
+                'text-halo-width': 1,
+                'text-halo-color': 'hsla(0, 0%, 100%, 1)',
+                'text-color': '#4d1d50'
+            },
+            filter: EMPTY_FILTER
+        });
+
+        map.addLayer({
+            id: 'plain-landmark-squares',
+            type: 'symbol',
+            source: LANDMARK_SOURCE_ID,
+            layout: {
+                'visibility': 'none',
+                'text-field': '■',
+                'text-font': ['Arial Unicode MS Regular'],
+                'text-size': 11.25,
+                'text-allow-overlap': true,
+                'text-ignore-placement': true
+            },
+            paint: {
+                'text-color': '#582358',
+                'text-halo-color': '#fffaf2',
+                'text-halo-width': 0.8
             },
             filter: EMPTY_FILTER
         });

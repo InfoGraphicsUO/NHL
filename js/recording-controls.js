@@ -15,6 +15,7 @@ function setupRecordingControls(map, selection) {
     const panelBoxes = Array.from(document.querySelectorAll('.recording-panel-toggle'));
     const resultsBox = panelBoxes.find(box => box.value === 'results');
     const backgroundSitesBox = document.getElementById('recording-background-sites');
+    const plainMarkersBox = document.getElementById('recording-plain-markers');
     const sidePanel = document.getElementById('side-panel');
     const features = map._landmarkSourceData.features;
 
@@ -55,6 +56,7 @@ function setupRecordingControls(map, selection) {
 
         // grey filtered-out points hide so playing the year filter shows sites appearing
         setLayerVisibility(map, BACKGROUND_LAYERS, open && !backgroundSitesBox.checked ? 'none' : 'visible');
+        setPlainMarkers(map, open && plainMarkersBox.checked);
 
         // a checked box should always mean a visible panel
         if (open && resultsBox.checked && !sidePanel.classList.contains('is-open')) {
@@ -128,6 +130,7 @@ function setupRecordingControls(map, selection) {
     });
     panelBoxes.forEach(box => box.addEventListener('change', syncControls));
     backgroundSitesBox.addEventListener('change', syncControls);
+    plainMarkersBox.addEventListener('change', syncControls);
 
     // closing the panel with its own button is the same as unchecking it
     document.getElementById('results-panel-close').addEventListener('click', () => {
