@@ -52,6 +52,22 @@ class HomeControl {
 
 const DEFAULT_STYLE_URL = 'mapbox://styles/infographics/cmlhb3rze006q01sn2k2k5qki';
 
+// styles owned by other mapbox accounts need that account's token to load
+const MAPBOX_ACCOUNT_TOKENS = {
+    steiner: 'pk.eyJ1Ijoic3RlaW5lciIsImEiOiIyT1NsejNjIn0.RTh9EHOG2cpFVPYMfC8wPQ'
+};
+
+function useAccountToken(url) {
+    // swap in the owning account's token for its styles, sprites and fonts
+    const match = url.match(/^https:\/\/api\.mapbox\.com\/(?:styles|fonts)\/v1\/([^/]+)\//);
+    const token = match && MAPBOX_ACCOUNT_TOKENS[match[1]];
+    if (!token) return { url };
+
+    const next = new URL(url);
+    next.searchParams.set('access_token', token);
+    return { url: next.toString() };
+}
+
 // basemap choices shown in the map's style selector
 const BASEMAP_STYLES = [
     { id: 'nhl', label: 'Default', url: DEFAULT_STYLE_URL },
@@ -60,7 +76,14 @@ const BASEMAP_STYLES = [
     { id: 'light', label: 'Light', url: 'mapbox://styles/mapbox/light-v11' },
     { id: 'dark', label: 'Dark', url: 'mapbox://styles/mapbox/dark-v11' },
     { id: 'satellite', label: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
-    { id: 'satellite-streets', label: 'Satellite Streets', url: 'mapbox://styles/mapbox/satellite-streets-v12' }
+    { id: 'satellite-streets', label: 'Satellite Streets', url: 'mapbox://styles/mapbox/satellite-streets-v12' },
+    {
+        id: 'monumental-denial',
+        label: 'Monumental Denial',
+        url: 'mapbox://styles/steiner/cmw1fqauq006y01stf0be3uje',
+        // the style has its own unfiltered landmark layers, which would sit under ours
+        hiddenLayers: ['nhl-landmarks', 'nhl-landmark-squares']
+    }
 ];
 
 class BasemapControl {
@@ -121,6 +144,7 @@ class BasemapControl {
         map.once('style.load', () => {
             if (token !== this._switchToken) return;
             if (this._projection) map.setProjection(this._projection);
+            setLayerVisibility(map, style.hiddenLayers || [], 'none');
             restoreLandmarkLayers(map, this._pendingLayers);
             this._pendingLayers = null;
         });
@@ -142,6 +166,7 @@ function mapInits() {
         center: NHL_MAP_HOME.center,
         zoom: NHL_MAP_HOME.zoom,
         attributionControl: false,
+        transformRequest: useAccountToken,
     });
 
     // shared by filters and map controls outside this module
