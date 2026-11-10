@@ -11,6 +11,7 @@ function setupRecordingControls(map, selection) {
     const speedInput = document.getElementById('recording-speed');
     const startButton = document.getElementById('recording-start');
     const resetButton = document.getElementById('recording-reset');
+    const yearPlayButton = document.getElementById('recording-year-play');
     const status = document.getElementById('recording-status');
     const panelBoxes = Array.from(document.querySelectorAll('.recording-panel-toggle'));
     const resultsBox = panelBoxes.find(box => box.value === 'results');
@@ -122,6 +123,19 @@ function setupRecordingControls(map, selection) {
         selection.clear();
         window._nhlFilterPanelController?.showResultsPanel();
         map.jumpTo({ ...NHL_MAP_HOME, bearing: 0, pitch: 0 });
+    });
+
+    // same playback as the play button by the year designated slider in the filter panel
+    yearPlayButton.addEventListener('click', () => {
+        window._nhlFilterPanelController?.toggleYearPlayback();
+    });
+
+    window.addEventListener('nhl:yearplayback', event => {
+        const { playing } = event.detail;
+        yearPlayButton.innerHTML = playing
+            ? '<i class="fa-solid fa-pause" aria-hidden="true"></i> Pause years'
+            : '<i class="fa-solid fa-play" aria-hidden="true"></i> Play years';
+        yearPlayButton.setAttribute('aria-label', playing ? 'Pause year designated' : 'Play year designated');
     });
 
     toggle.addEventListener('change', () => {
