@@ -319,7 +319,7 @@
             syncApplyButtonState();
         }
 
-        const yearPlayback = { isStepping: false, stop() {} };
+        const yearPlayback = { isStepping: false, stop() {}, toggle() {} };
 
         const sliders = typeof setupFilterYearSliders === 'function'
             ? setupFilterYearSliders({ onDraftChange })
@@ -1204,12 +1204,20 @@
             const firstYear = years.length ? Math.max(field.min, Math.min(...years)) : field.min;
             let timer = 0;
 
+            // lets other controls follow playback, e.g. the recording banner's play button
+            function announce(year) {
+                window.dispatchEvent(new CustomEvent('nhl:yearplayback', {
+                    detail: { playing: Boolean(timer), year }
+                }));
+            }
+
             function syncButton() {
                 const playing = Boolean(timer);
                 button.innerHTML = playing
                     ? '<i class="fa-solid fa-pause" aria-hidden="true"></i><span>Pause</span>'
                     : '<i class="fa-solid fa-play" aria-hidden="true"></i><span>Play</span>';
                 button.setAttribute('aria-label', playing ? 'Pause year designated' : 'Play year designated');
+                announce(slider.getRange()[1]);
             }
 
             function showThrough(year) {
@@ -1220,6 +1228,7 @@
                     yearPlayback.isStepping = false;
                 }
                 applyFilters({ openResults: false, clearSelection: false, renderList: false });
+                announce(year);
             }
 
             function stop() {
@@ -1254,7 +1263,8 @@
             }
 
             yearPlayback.stop = stop;
-            listen(button, 'click', () => (timer ? stop() : play()));
+            yearPlayback.toggle = () => (timer ? stop() : play());
+            listen(button, 'click', () => yearPlayback.toggle());
             // any manual change to the slider takes over from playback
             listen(slider.element, 'pointerdown', stop);
             listen(slider.element, 'keydown', stop);
@@ -1296,6 +1306,7 @@
                 if (resultsView) resultsView.setAttribute('aria-hidden', 'true');
                 if (detailView) detailView.setAttribute('aria-hidden', 'false');
             },
+            toggleYearPlayback: () => yearPlayback.toggle(),
             getAppliedResults: () => appliedResults.slice(),
             getAppliedState: () => appliedState ? cloneState(appliedState) : null,
             // reapplies the saved state after the source data changes
