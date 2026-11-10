@@ -1,5 +1,7 @@
 // internal demo tool: banner controls for flying to a landmark on a countdown
 const RECORDING_COUNTDOWN_SECONDS = 5;
+// how long the last year stays on screen after year designated playback stops
+const YEAR_LABEL_HOLD_MS = 2000;
 
 function setupRecordingControls(map, selection) {
     const root = document.documentElement;
@@ -12,6 +14,8 @@ function setupRecordingControls(map, selection) {
     const startButton = document.getElementById('recording-start');
     const resetButton = document.getElementById('recording-reset');
     const yearPlayButton = document.getElementById('recording-year-play');
+    const yearLabel = document.getElementById('year-playback-label');
+    let yearLabelTimer = 0;
     const status = document.getElementById('recording-status');
     const panelBoxes = Array.from(document.querySelectorAll('.recording-panel-toggle'));
     const resultsBox = panelBoxes.find(box => box.value === 'results');
@@ -136,6 +140,22 @@ function setupRecordingControls(map, selection) {
             ? '<i class="fa-solid fa-pause" aria-hidden="true"></i> Pause years'
             : '<i class="fa-solid fa-play" aria-hidden="true"></i> Play years';
         yearPlayButton.setAttribute('aria-label', playing ? 'Pause year designated' : 'Play year designated');
+
+        // big year in the corner while playing, held briefly so the final year makes the recording
+        clearTimeout(yearLabelTimer);
+        yearLabel.textContent = event.detail.year;
+        yearLabel.classList.remove('is-fading');
+        if (playing) {
+            yearLabel.hidden = false;
+        } else if (!yearLabel.hidden) {
+            yearLabelTimer = setTimeout(() => {
+                yearLabel.classList.add('is-fading');
+                yearLabelTimer = setTimeout(() => {
+                    yearLabel.hidden = true;
+                    yearLabel.classList.remove('is-fading');
+                }, 400);
+            }, YEAR_LABEL_HOLD_MS);
+        }
     });
 
     toggle.addEventListener('change', () => {
