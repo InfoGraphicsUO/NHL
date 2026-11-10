@@ -52,6 +52,16 @@ class HomeControl {
 
 const DEFAULT_STYLE_URL = 'mapbox://styles/infographics/cmlhb3rze006q01sn2k2k5qki';
 
+// non-place labels (roads, pois, transit, airports, parks) in the default style
+const DEFAULT_STYLE_HIDDEN_LABELS = [
+    'road-label-simple',
+    'natural-line-label',
+    'natural-point-label',
+    'poi-label',
+    'transit-label',
+    'airport-label'
+];
+
 // styles owned by other mapbox accounts need that account's token to load
 const MAPBOX_ACCOUNT_TOKENS = {
     steiner: 'pk.eyJ1Ijoic3RlaW5lciIsImEiOiIyT1NsejNjIn0.RTh9EHOG2cpFVPYMfC8wPQ'
@@ -70,7 +80,13 @@ function useAccountToken(url) {
 
 // basemap choices shown in the map's style selector
 const BASEMAP_STYLES = [
-    { id: 'nhl', label: 'Default', url: DEFAULT_STYLE_URL },
+    {
+        id: 'nhl',
+        label: 'Default',
+        url: DEFAULT_STYLE_URL,
+        // match the monumental denial style, which only labels places and water
+        hiddenLayers: DEFAULT_STYLE_HIDDEN_LABELS
+    },
     { id: 'streets', label: 'Streets', url: 'mapbox://styles/mapbox/streets-v12' },
     { id: 'outdoors', label: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v12' },
     { id: 'light', label: 'Light', url: 'mapbox://styles/mapbox/light-v11' },
@@ -118,6 +134,7 @@ class BasemapControl {
         // classic styles set their own projection, so keep the one the app started with
         map.once('style.load', () => {
             this._projection = map.getProjection()?.name;
+            setLayerVisibility(map, BASEMAP_STYLES[0].hiddenLayers || [], 'none');
         });
         return this._container;
     }
