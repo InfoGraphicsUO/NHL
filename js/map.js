@@ -99,26 +99,42 @@ const BASEMAP_STYLES = [
         url: 'mapbox://styles/steiner/cmw1fqauq006y01stf0be3uje',
         // the style has its own unfiltered landmark layers, which would sit under ours
         hiddenLayers: ['nhl-landmarks', 'nhl-landmark-squares'],
-        // the imported mapbox standard basemap draws its own poi, road and transit labels
-        importConfig: {
-            basemap: {
-                showPointOfInterestLabels: false,
-                showRoadLabels: false,
-                showTransitLabels: false,
-                showLandmarkIcons: false,
-                showLandmarkIconLabels: false
-            }
-        }
+        // the style imports all of mapbox standard under its own layers, which draws standard's
+        // labels, icons and road shields over erik's; his layers already make a full basemap
+        stripImports: true
     }
 ];
 
-function setImportConfig(map, importConfig = {}) {
-    // apply config properties to a style's imports, e.g. mapbox standard label toggles
-    Object.entries(importConfig).forEach(([importId, config]) => {
-        Object.entries(config).forEach(([name, value]) => {
-            map.setConfigProperty(importId, name, value);
-        });
-    });
+const styleJsonCache = new Map();
+
+function mapboxStyleApiUrl(url) {
+    // turn a mapbox://styles/owner/id url into the styles api url, with the owner's token
+    const path = url.replace(/^mapbox:\/\/styles\//, '');
+    const apiUrl = `https://api.mapbox.com/styles/v1/${path}?access_token=${mapboxgl.accessToken}`;
+    return useAccountToken(apiUrl).url;
+}
+
+function loadStyle(style) {
+    // a style url, or for styles with stripImports, its json without the imported styles
+    if (!style.stripImports) return Promise.resolve(style.url);
+    if (!styleJsonCache.has(style.url)) {
+        const request = fetch(mapboxStyleApiUrl(style.url))
+            .then(response => {
+                if (!response.ok) throw new Error(`style request failed: ${response.status}`);
+                return response.json();
+            })
+            .then(json => {
+                delete json.imports;
+                return json;
+            })
+            .catch(error => {
+                styleJsonCache.delete(style.url);
+                throw error;
+            });
+        styleJsonCache.set(style.url, request);
+    }
+    // setStyle keeps a reference to the json, so hand it a copy each time
+    return styleJsonCache.get(style.url).then(json => structuredClone(json));
 }
 
 class BasemapControl {
@@ -181,11 +197,18 @@ class BasemapControl {
             if (token !== this._switchToken) return;
             if (this._projection) map.setProjection(this._projection);
             setLayerVisibility(map, style.hiddenLayers || [], 'none');
-            setImportConfig(map, style.importConfig);
             restoreLandmarkLayers(map, this._pendingLayers);
             this._pendingLayers = null;
         });
-        map.setStyle(style.url, { diff: false });
+        loadStyle(style)
+            .then(styleSource => {
+                if (token === this._switchToken) map.setStyle(styleSource, { diff: false });
+            })
+            .catch(error => {
+                // fall back to the hosted style, imports and all, rather than no basemap
+                console.error(error);
+                if (token === this._switchToken) map.setStyle(style.url, { diff: false });
+            });
     }
 
     onRemove() {
