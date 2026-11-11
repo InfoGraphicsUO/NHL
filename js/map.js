@@ -98,9 +98,28 @@ const BASEMAP_STYLES = [
         label: 'Monumental Denial',
         url: 'mapbox://styles/steiner/cmw1fqauq006y01stf0be3uje',
         // the style has its own unfiltered landmark layers, which would sit under ours
-        hiddenLayers: ['nhl-landmarks', 'nhl-landmark-squares']
+        hiddenLayers: ['nhl-landmarks', 'nhl-landmark-squares'],
+        // the imported mapbox standard basemap draws its own poi, road and transit labels
+        importConfig: {
+            basemap: {
+                showPointOfInterestLabels: false,
+                showRoadLabels: false,
+                showTransitLabels: false,
+                showLandmarkIcons: false,
+                showLandmarkIconLabels: false
+            }
+        }
     }
 ];
+
+function setImportConfig(map, importConfig = {}) {
+    // apply config properties to a style's imports, e.g. mapbox standard label toggles
+    Object.entries(importConfig).forEach(([importId, config]) => {
+        Object.entries(config).forEach(([name, value]) => {
+            map.setConfigProperty(importId, name, value);
+        });
+    });
+}
 
 class BasemapControl {
     // mapbox control that swaps the basemap style and keeps the landmark layers on top
@@ -162,6 +181,7 @@ class BasemapControl {
             if (token !== this._switchToken) return;
             if (this._projection) map.setProjection(this._projection);
             setLayerVisibility(map, style.hiddenLayers || [], 'none');
+            setImportConfig(map, style.importConfig);
             restoreLandmarkLayers(map, this._pendingLayers);
             this._pendingLayers = null;
         });
