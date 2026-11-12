@@ -60,7 +60,7 @@ function setupRecordingControls(map, selection) {
         });
 
         // grey filtered-out points hide so playing the year filter shows sites appearing
-        setLayerVisibility(map, BACKGROUND_LAYERS, open && !backgroundSitesBox.checked ? 'none' : 'visible');
+        setBackgroundSites(map, !open || backgroundSitesBox.checked);
         setPlainMarkers(map, open && plainMarkersBox.checked);
 
         // a checked box should always mean a visible panel
