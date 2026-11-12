@@ -36,9 +36,13 @@ const BACKGROUND_LAYERS = [
 // plain square and name markers used in place of the icons for recordings
 const PLAIN_LAYERS = ['plain-landmark-labels', 'plain-landmark-squares'];
 
+// grey plain squares for points hidden by the current filters
+const PLAIN_BACKGROUND_LAYERS = ['plain-landmark-background'];
+
 // every marker layer that can start or continue a hover interaction
 const LANDMARK_HOVER_LAYERS = [
     'plain-landmark-squares',
+    'plain-landmark-background',
     'backgroundlandmark',
     'backgroundlandmark-selected',
     'nosymbologylandmark',
@@ -143,7 +147,7 @@ function setActivePointFilters(map, filterExpr) {
             map.setFilter(layerId, activeFilter);
         }
     });
-    ['backgroundlandmark'].forEach(layerId => {
+    ['backgroundlandmark', ...PLAIN_BACKGROUND_LAYERS].forEach(layerId => {
         if (map.getLayer(layerId)) {
             map.setFilter(layerId, ['!', activeFilter]);
         }
@@ -192,9 +196,18 @@ function syncMarkerLayers(map) {
     // plain markers replace both icon families while they are on
     const plain = Boolean(map._plainMarkersEnabled);
     const symbology = Boolean(window.modeSymbologyEnabled);
+    const background = !map._backgroundSitesHidden;
     setLayerVisibility(map, SYMBOLOGY_LAYERS, !plain && symbology ? 'visible' : 'none');
     setLayerVisibility(map, NOSYMBOLOGY_LAYERS, !plain && !symbology ? 'visible' : 'none');
     setLayerVisibility(map, PLAIN_LAYERS, plain ? 'visible' : 'none');
+    setLayerVisibility(map, BACKGROUND_LAYERS, !plain && background ? 'visible' : 'none');
+    setLayerVisibility(map, PLAIN_BACKGROUND_LAYERS, plain && background ? 'visible' : 'none');
+}
+
+function setBackgroundSites(map, visible) {
+    if (!map._backgroundSitesHidden === Boolean(visible)) return;
+    map._backgroundSitesHidden = !visible;
+    syncMarkerLayers(map);
 }
 
 function setPlainMarkers(map, enabled) {
@@ -613,6 +626,27 @@ function addMapLayers(map) {
                 'icon-image': 'selected-outline',
                 'icon-allow-overlap': true,
                 'icon-size': iconSizeZoom(SELECTED_SCALE),
+            },
+            filter: EMPTY_FILTER
+        });
+
+        // grey plain squares sit below the active plain markers, like the grey icons
+        map.addLayer({
+            id: 'plain-landmark-background',
+            type: 'symbol',
+            source: LANDMARK_SOURCE_ID,
+            layout: {
+                'visibility': 'none',
+                'text-field': '■',
+                'text-font': ['Arial Unicode MS Regular'],
+                'text-size': 11.25,
+                'text-allow-overlap': true,
+                'text-ignore-placement': true
+            },
+            paint: {
+                'text-color': '#b0b0b0',
+                'text-halo-color': '#fffaf2',
+                'text-halo-width': 0.8
             },
             filter: EMPTY_FILTER
         });
